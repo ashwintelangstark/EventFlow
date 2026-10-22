@@ -139,7 +139,7 @@ const ORGS = [
   { name: "Others", count: 6, color: "#9eb4d1" }
 ];
 
-export const AdminPortal = () => {
+export const AdminPortal = ({ onGoToLanding }) => {
   const { user, setRole, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [attendees, setAttendees] = useState(() => {
@@ -722,17 +722,15 @@ export const AdminPortal = () => {
                 <Users size={12} />
                 <span>Staff & Attendee View</span>
               </button>
-              <a
-                href="/landing"
+              <button
+                type="button"
                 className="role-segment-btn"
+                onClick={onGoToLanding || (() => window.open('/landing', '_blank'))}
                 title="View Public Event Landing Page"
-                target="_blank"
-                rel="noreferrer"
-                style={{ textDecoration: 'none' }}
               >
                 <Globe size={12} />
                 <span>Landing Page</span>
-              </a>
+              </button>
             </div>
 
             <div className="meta-box">

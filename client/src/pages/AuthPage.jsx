@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import './AuthPage.css';
 
-export const AuthPage = () => {
+export const AuthPage = ({ onBackToLanding }) => {
   const { login, signup, loading } = useAuth();
   
   // Initialize mode from URL params (?mode=signup, ?register=true, or hash #register)
@@ -248,8 +248,15 @@ export const AuthPage = () => {
               <span style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 600 }}>
                 EventFlow Portal
               </span>
-              <a
-                href="/landing"
+              <button
+                type="button"
+                onClick={() => {
+                  if (onBackToLanding) {
+                    onBackToLanding();
+                  } else {
+                    window.location.href = '/';
+                  }
+                }}
                 style={{
                   fontSize: '11px',
                   color: 'var(--accent-cyan)',
@@ -261,13 +268,14 @@ export const AuthPage = () => {
                   borderRadius: 'var(--radius-xs)',
                   background: 'rgba(19, 220, 229, 0.08)',
                   border: '1px solid rgba(19, 220, 229, 0.2)',
+                  cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
                 title="View full event landing page"
               >
                 <ArrowLeft size={12} />
                 <span>Event Landing Page</span>
-              </a>
+              </button>
             </div>
 
             {/* Tab Switcher: Sign In / Register */}

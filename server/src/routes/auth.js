@@ -5,14 +5,21 @@ const router = express.Router();
 
 // Helper to format user profile
 const formatUser = (authUser, profile = {}) => {
-  const displayName = profile?.full_name || authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'User';
+  const email = (authUser?.email || '').toLowerCase().trim();
+  // STRICT: Only admin@gmail.com gets admin portal access. All others receive non-admin view.
+  const isAdmin = email === 'admin@gmail.com';
+  const role = isAdmin ? 'admin' : 'staff';
+  const displayName = isAdmin
+    ? (profile?.full_name || 'Admin')
+    : (profile?.full_name || authUser?.user_metadata?.name || email.split('@')[0] || 'User');
+
   return {
     id: authUser.id,
     email: authUser.email,
     name: displayName,
-    role: profile?.role || authUser?.user_metadata?.role || 'staff',
-    category: profile?.category || authUser?.user_metadata?.category || 'Student',
-    organization: profile?.organization || authUser?.user_metadata?.organization || 'Alliance University',
+    role,
+    category: isAdmin ? 'Admin' : (profile?.category || authUser?.user_metadata?.category || 'Student'),
+    organization: isAdmin ? 'AU-QUASAR Operations' : (profile?.organization || authUser?.user_metadata?.organization || 'Alliance University'),
     phone: profile?.phone || authUser?.user_metadata?.phone || '',
     avatar: displayName.charAt(0).toUpperCase()
   };
@@ -28,8 +35,9 @@ router.post('/login', async (req, res) => {
 
   if (isSupabaseConfigured && supabase) {
     try {
+      const cleanEmail = email.trim().toLowerCase();
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         password
       });
 
@@ -65,7 +73,7 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
-  const { email, password, role, category, name, organization, phone } = req.body;
+  const { email, password, category, name, organization, phone } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -76,11 +84,9 @@ router.post('/signup', async (req, res) => {
       const cleanEmail = email.trim().toLowerCase();
       const displayName = name || cleanEmail.split('@')[0].replace('.', ' ');
 
-      // Supabase role enum in DB is 'admin' | 'staff'
-      let systemRole = 'staff';
-      if (role === 'admin' || cleanEmail.includes('admin')) {
-        systemRole = 'admin';
-      }
+      // All new signups are strictly non-admin ('staff' / attendee).
+      // Only the pre-registered admin@gmail.com can be admin.
+      const systemRole = cleanEmail === 'admin@gmail.com' ? 'admin' : 'staff';
 
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,

@@ -44,9 +44,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Allow switching roles/views dynamically while in-session
+  // Allow switching roles/views dynamically while in-session (only admin@gmail.com can preview admin role)
   const setRole = (newRole) => {
     if (!user) return;
+    if (newRole === 'admin' && user?.email?.toLowerCase() !== 'admin@gmail.com') {
+      return;
+    }
     const updated = {
       ...user,
       role: newRole

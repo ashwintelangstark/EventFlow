@@ -69,8 +69,8 @@ const ANNOUNCEMENTS = [
   }
 ];
 
-export const NonAdminPortal = () => {
-  const { user, setRole, logout } = useAuth();
+export const NonAdminPortal = ({ onGoToLanding }) => {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [toast, setToast] = useState('');
 
@@ -228,36 +228,25 @@ export const NonAdminPortal = () => {
         {/* TOPBAR WITH PROMINENT PORTAL SWITCHER */}
         <header className="nonadmin-topbar">
           <div className="topbar-left-meta">
-            {/* View Mode Segment Switcher */}
+            {/* Participant Portal Badge & Landing Page Link */}
             <div className="role-segment-control">
-              <button
-                type="button"
-                className="role-segment-btn"
-                onClick={() => setRole('admin')}
-                title="Switch to Admin Operations Portal"
-              >
-                <Shield size={13} />
-                <span>Admin View</span>
-              </button>
-              <button
-                type="button"
+              <span
                 className="role-segment-btn active"
-                title="Currently viewing Staff / Participant Portal"
+                style={{ cursor: 'default' }}
+                title="Participant & Staff Event Portal"
               >
                 <Users size={13} />
-                <span>Staff & Attendee View</span>
-              </button>
-              <a
-                href="/landing"
+                <span>Attendee & Staff Portal</span>
+              </span>
+              <button
+                type="button"
                 className="role-segment-btn"
+                onClick={onGoToLanding || (() => window.open('/landing', '_blank'))}
                 title="View Public Event Landing Page"
-                target="_blank"
-                rel="noreferrer"
-                style={{ textDecoration: 'none' }}
               >
                 <Globe size={13} />
                 <span>Landing Page</span>
-              </a>
+              </button>
             </div>
 
             <div className="topbar-meta-item">

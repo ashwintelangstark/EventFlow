@@ -1713,20 +1713,38 @@
   <script>
     (function () {
       function getWebAppTarget(mode) {
-        // If loaded on Vite dev server (port 5173)
         if (window.location.port === "5173") {
           return `/?mode=${mode}`;
         }
-        // If loaded on Express server (port 5001) or other local port
         if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
           return `http://localhost:5173/?mode=${mode}`;
         }
-        // If hosted on production or same origin
         if (window.location.protocol.startsWith("http")) {
           return `/?mode=${mode}`;
         }
-        // Direct file:// access fallback
         return `http://localhost:5173/?mode=${mode}`;
+      }
+
+      function navigateToApp(mode, e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'EVENTFLOW_NAVIGATE', mode: mode }, '*');
+            return;
+          }
+        } catch (err) {}
+
+        try {
+          if (window.top && window.top !== window) {
+            window.top.location.href = `/?mode=${mode}`;
+            return;
+          }
+        } catch (err) {}
+
+        window.location.href = getWebAppTarget(mode);
       }
 
       // Sync all registration CTA buttons to WebApp registration mode
@@ -1735,12 +1753,18 @@
       );
       registerButtons.forEach(function (btn) {
         btn.setAttribute('href', getWebAppTarget('signup'));
+        btn.addEventListener('click', function(e) {
+          navigateToApp('signup', e);
+        });
       });
 
       // Sync sign in links
       const loginLinks = document.querySelectorAll('.nav-login-link');
       loginLinks.forEach(function (link) {
         link.setAttribute('href', getWebAppTarget('login'));
+        link.addEventListener('click', function(e) {
+          navigateToApp('login', e);
+        });
       });
     })();
   </script>
