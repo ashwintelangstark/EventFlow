@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import {
-  Home,
   UserCheck,
   Bell,
   GitCommit,
@@ -24,8 +23,7 @@ import {
   Globe,
   QrCode,
   Ticket,
-  Building2,
-  Tag
+  Building2
 } from 'lucide-react';
 import './NonAdminPortal.css';
 
@@ -151,7 +149,7 @@ const DEFAULT_STAGES = [
 
 export const NonAdminPortal = ({ onGoToLanding }) => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('registrations');
   const [toast, setToast] = useState('');
 
   // Live synced state from Supabase backend
@@ -281,19 +279,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
     }
   };
 
-  // Dynamic KPI Metrics
-  const totalRegistrations = registrations.length;
-  const totalCheckedIn = registrations.filter((r) => r.checkedIn || r.status === 'Checked In').length;
-  const totalYetToArrive = Math.max(0, totalRegistrations - totalCheckedIn);
-  const checkinRate = totalRegistrations > 0 ? Math.round((totalCheckedIn / totalRegistrations) * 100) : 0;
-  const yetToArriveRate = totalRegistrations > 0 ? Math.round((totalYetToArrive / totalRegistrations) * 100) : 0;
 
-  // Attendee Categories dynamic breakdown
-  const categoryCounts = registrations.reduce((acc, r) => {
-    const cat = r.category || 'Other';
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {});
 
   // Filtered Announcements
   let filteredAnnouncements = announcements.filter((a) => {
@@ -339,14 +325,6 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
         </div>
 
         <nav className="nonadmin-nav">
-          <button
-            type="button"
-            className={activeTab === 'dashboard' ? 'active' : ''}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <Home size={16} className="nav-ico" />
-            <span className="nav-label">Dashboard</span>
-          </button>
 
           <button
             type="button"
@@ -419,246 +397,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
           </div>
         </header>
 
-        {/* ================= TAB 1: DASHBOARD ================= */}
-        {activeTab === 'dashboard' && (
-          <section className="portal-tab-content" key="dashboard">
-            <div className="welcome-section">
-              <div className="text-dim">Welcome back,</div>
-              <h1 className="portal-heading">
-                {user?.name || 'Participant'}{' '}
-                <span className="pill pill-purple">{user?.role === 'staff' ? 'Event Staff' : 'Participant'}</span>
-              </h1>
-              <p className="portal-sub">Live overview of IDEA → AI → IMPACT schedule, registrations, and logistics.</p>
-            </div>
 
-            {/* Hero Banner */}
-            <div className="hero-banner">
-              <div>
-                <h2>IDEA → AI → <span className="gradient-text">IMPACT</span></h2>
-                <p>A HALF-DAY, HANDS-ON INNOVATION LAB BY AU-QUASAR, ALLIANCE UNIVERSITY</p>
-              </div>
-              <div className="banner-motto">
-                IDEAS<br />TECHNOLOGY<br />PEOPLE<br />A BETTER TOMORROW
-              </div>
-            </div>
-
-            {/* 4 Minimalist Stats Cards */}
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-card-row">
-                  <div className="stat-card-icon blue"><Users size={20} /></div>
-                  <div>
-                    <div className="stat-card-label">Total Registrations</div>
-                    <strong>{totalRegistrations}</strong>
-                  </div>
-                </div>
-                <div className="bar-track">
-                  <span style={{ width: totalRegistrations > 0 ? '100%' : '0%' }} />
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-card-row">
-                  <div className="stat-card-icon green"><CheckCircle2 size={20} /></div>
-                  <div>
-                    <div className="stat-card-label">Checked In</div>
-                    <strong>{totalCheckedIn}</strong>
-                  </div>
-                  <div className="stat-card-note">{checkinRate}%</div>
-                </div>
-                <div className="bar-track">
-                  <span style={{ width: `${checkinRate}%`, background: 'var(--accent-green)' }} />
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-card-row">
-                  <div className="stat-card-icon amber"><Clock size={20} /></div>
-                  <div>
-                    <div className="stat-card-label">Yet to Arrive</div>
-                    <strong>{totalYetToArrive}</strong>
-                  </div>
-                  <div className="stat-card-note">{yetToArriveRate}%</div>
-                </div>
-                <div className="bar-track">
-                  <span style={{ width: `${yetToArriveRate}%`, background: 'var(--accent-amber)' }} />
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-card-row">
-                  <div className="stat-card-icon purple"><Calendar size={20} /></div>
-                  <div>
-                    <div className="stat-card-label">Event Time</div>
-                    <strong style={{ fontSize: '17px', marginTop: '4px' }}>10:00 – 1:00</strong>
-                  </div>
-                </div>
-                <div className="bar-track">
-                  <span style={{ width: '100%', background: 'var(--accent-purple)' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Two-Column: Registration Trend & Categories */}
-            <div className="two-col-grid">
-              <div className="card">
-                <div className="card-head">
-                  <h3>Registration Momentum</h3>
-                  <span className="text-dim" style={{ fontSize: '11px' }}>Live Activity</span>
-                </div>
-                {totalRegistrations === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
-                    <Users size={28} style={{ opacity: 0.35, marginBottom: '6px' }} />
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>No Registrations Recorded Yet</div>
-                    <div style={{ fontSize: '12px' }}>Registered participants will populate live analytics in real time.</div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="chart-wrapper">
-                      <svg viewBox="0 0 600 180" preserveAspectRatio="none">
-                        <polyline
-                          points="0,155 65,143 130,130 195,116 260,102 325,88 390,74 455,60 520,45 590,22"
-                          fill="none"
-                          stroke="#1c7fff"
-                          strokeWidth="2.5"
-                        />
-                      </svg>
-                    </div>
-                    <div className="chart-timeline-labels">
-                      <span>Inception</span>
-                      <span>Mid-Point</span>
-                      <span>Current ({totalRegistrations} Active)</span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="card">
-                <div className="card-head">
-                  <h3>Attendee Categories</h3>
-                  <span className="text-dim" style={{ fontSize: '11px' }}>Distribution</span>
-                </div>
-                {totalRegistrations === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
-                    <Tag size={28} style={{ opacity: 0.35, marginBottom: '6px' }} />
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>No Category Data Yet</div>
-                    <div style={{ fontSize: '12px' }}>Role distribution appears once attendees sign up.</div>
-                  </div>
-                ) : (
-                  <div className="donut-container">
-                    <div className="donut-chart" />
-                    <div className="donut-legend-grid">
-                      {Object.entries(categoryCounts).map(([cat, count]) => {
-                        const pct = Math.round((count / totalRegistrations) * 100);
-                        return (
-                          <span key={cat}>
-                            ● {cat} <b>{pct}%</b> ({count})
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom 3-Grid: Recent Announcements, Quick Actions, Event Details */}
-            <div className="three-col-grid" style={{ marginTop: '16px' }}>
-              <div className="card">
-                <div className="card-head">
-                  <h3>Recent Announcements</h3>
-                  <button type="button" className="btn btn-ghost" style={{ padding: 0 }} onClick={() => setActiveTab('announcements')}>
-                    View all →
-                  </button>
-                </div>
-                <div className="list-stack">
-                  {announcements.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)' }}>
-                      <Bell size={20} style={{ opacity: 0.35, marginBottom: '4px' }} />
-                      <div style={{ fontSize: '12px' }}>No live announcements posted yet.</div>
-                    </div>
-                  ) : (
-                    announcements.slice(0, 3).map((a) => (
-                      <div key={a.id} className="list-item-row">
-                        <div className="round-icon-badge">⚑</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <strong>{a.title}</strong>
-                          <p>{(a.message || '').slice(0, 60)}...</p>
-                        </div>
-                        <time>{(a.date || '').split(', ')[1] || 'Just now'}</time>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="card">
-                <h3>Quick Actions</h3>
-                <div className="quick-action-stack" style={{ marginTop: '14px' }}>
-                  <button
-                    type="button"
-                    className="action-tile"
-                    onClick={() => setActiveTab('registrations')}
-                  >
-                    <UserCheck size={18} className="action-tile-icon" />
-                    <div>
-                      <strong>Register Myself</strong>
-                      <small>Fill in your event badge details →</small>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="action-tile"
-                    onClick={() => setActiveTab('announcements')}
-                  >
-                    <Bell size={18} className="action-tile-icon" />
-                    <div>
-                      <strong>View Announcements</strong>
-                      <small>Latest updates & venue notices →</small>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="action-tile"
-                    onClick={() => setActiveTab('eventflow')}
-                  >
-                    <GitCommit size={18} className="action-tile-icon" />
-                    <div>
-                      <strong>View Event Flow</strong>
-                      <small>Official 9-stage schedule →</small>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              <div className="card">
-                <h3>Event Details</h3>
-                <div className="details-stack" style={{ marginTop: '14px' }}>
-                  <div className="detail-row">
-                    <Calendar size={16} className="meta-icon" />
-                    <div>
-                      <strong>Sat, 24 Oct 2026</strong>
-                      <small>10:00 AM – 1:00 PM IST</small>
-                    </div>
-                  </div>
-                  <div className="detail-row">
-                    <MapPin size={16} className="meta-icon" />
-                    <div>
-                      <strong>AU-QUASAR</strong>
-                      <small>Alliance University, Bengaluru</small>
-                    </div>
-                  </div>
-                  <hr style={{ borderColor: 'rgba(255, 255, 255, 0.06)', margin: '8px 0' }} />
-                  <p className="text-dim" style={{ fontSize: '11.5px', lineHeight: '1.5' }}>
-                    Need on-site assistance? Visit the Quasar Help Desk at Gate 2 entrance.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* ================= TAB 2: REGISTRATIONS ================= */}
         {activeTab === 'registrations' && (
