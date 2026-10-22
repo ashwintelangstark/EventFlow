@@ -228,26 +228,15 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
         {/* TOPBAR WITH PROMINENT PORTAL SWITCHER */}
         <header className="nonadmin-topbar">
           <div className="topbar-left-meta">
-            {/* Participant Portal Badge & Landing Page Link */}
-            <div className="role-segment-control">
-              <span
-                className="role-segment-btn active"
-                style={{ cursor: 'default' }}
-                title="Participant & Staff Event Portal"
-              >
-                <Users size={13} />
-                <span>Attendee & Staff Portal</span>
-              </span>
-              <button
-                type="button"
-                className="role-segment-btn"
-                onClick={onGoToLanding || (() => window.open('/landing', '_blank'))}
-                title="View Public Event Landing Page"
-              >
-                <Globe size={13} />
-                <span>Landing Page</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              className="topbar-landing-btn"
+              onClick={onGoToLanding || (() => window.open('/landing', '_blank'))}
+              title="View Public Event Landing Page"
+            >
+              <Globe size={13} />
+              <span>Landing Page</span>
+            </button>
 
             <div className="topbar-meta-item">
               <Calendar size={14} className="meta-icon" />

@@ -140,7 +140,7 @@ const ORGS = [
 ];
 
 export const AdminPortal = ({ onGoToLanding }) => {
-  const { user, setRole, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [attendees, setAttendees] = useState(() => {
     const saved = localStorage.getItem('eventflow_attendees');
@@ -703,35 +703,15 @@ export const AdminPortal = ({ onGoToLanding }) => {
           </div>
 
           <div className="topbar-meta">
-            {/* View Mode Segment Switcher */}
-            <div className="role-segment-control">
-              <button
-                type="button"
-                className="role-segment-btn active"
-                title="Currently viewing Admin Operations Portal"
-              >
-                <Shield size={12} />
-                <span>Admin View</span>
-              </button>
-              <button
-                type="button"
-                className="role-segment-btn"
-                onClick={() => setRole('staff')}
-                title="Switch to Staff & Attendee View"
-              >
-                <Users size={12} />
-                <span>Staff & Attendee View</span>
-              </button>
-              <button
-                type="button"
-                className="role-segment-btn"
-                onClick={onGoToLanding || (() => window.open('/landing', '_blank'))}
-                title="View Public Event Landing Page"
-              >
-                <Globe size={12} />
-                <span>Landing Page</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              className="topbar-landing-btn"
+              onClick={onGoToLanding || (() => window.open('/landing', '_blank'))}
+              title="View Public Event Landing Page"
+            >
+              <Globe size={13} />
+              <span>Landing Page</span>
+            </button>
 
             <div className="meta-box">
               <Calendar size={14} className="meta-ico" />

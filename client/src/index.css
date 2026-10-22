@@ -478,38 +478,27 @@ tbody tr:hover {
   flex-shrink: 0;
 }
 
-/* Header Role Segment Switcher */
-.role-segment-control {
-  display: inline-flex;
-  background: rgba(4, 13, 27, 0.75);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-full);
-  padding: 2px;
-  gap: 2px;
-  backdrop-filter: blur(14px);
-}
-
-.role-segment-btn {
+/* Topbar Landing Page Button */
+.topbar-landing-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 11px;
+  gap: 6px;
+  padding: 5px 12px;
   border-radius: var(--radius-full);
+  background: rgba(19, 220, 229, 0.08);
+  border: 1px solid rgba(19, 220, 229, 0.25);
+  color: var(--accent-cyan);
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted);
-  transition: var(--transition-smooth);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.role-segment-btn:hover {
+.topbar-landing-btn:hover {
+  background: rgba(19, 220, 229, 0.18);
+  border-color: rgba(19, 220, 229, 0.5);
   color: #ffffff;
-}
-
-.role-segment-btn.active {
-  background: rgba(19, 220, 229, 0.16);
-  border: 1px solid rgba(19, 220, 229, 0.35);
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(19, 220, 229, 0.2);
+  transform: translateY(-1px);
 }
 
 

@@ -31,7 +31,7 @@ app.get('/api/health', (req, res) => {
     status: 'online',
     app: 'EventFlow API',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'production'
   });
 });
 
