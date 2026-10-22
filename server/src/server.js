@@ -24,6 +24,9 @@ app.use(express.json({ limit: '10mb' }));
 // Serve Static Landing Page
 app.use('/landing', express.static(staticLandingPath));
 app.use('/static', express.static(staticLandingPath));
+app.get(['/landing_pg.mp4', '/landing/landing_pg.mp4'], (req, res) => {
+  res.sendFile(path.join(__dirname, '../../landing_pg.mp4'));
+});
 
 // Health Check
 app.get('/api/health', (req, res) => {

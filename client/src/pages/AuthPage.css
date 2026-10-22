@@ -8,56 +8,31 @@
   padding: 40px 24px;
 }
 
-/* Background Video & Atmosphere */
+/* Background Video & Atmosphere - Login Page Exclusive */
 .auth-bg-video {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  min-width: 100%;
-  min-height: 100%;
-  width: auto;
-  height: auto;
-  transform: translate(-50%, -50%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   object-fit: cover;
   z-index: 0;
   pointer-events: none;
 }
 
 .auth-video-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(8, 14, 28, 0.72) 0%, rgba(5, 9, 18, 0.92) 100%);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, rgba(4, 9, 22, 0.42) 0%, rgba(2, 6, 16, 0.62) 100%);
+  z-index: 1;
   pointer-events: none;
-}
-
-.glow-sphere {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(140px);
-  pointer-events: none;
-  z-index: 0;
-}
-.glow-sphere-1 {
-  width: 500px;
-  height: 500px;
-  background: rgba(19, 139, 255, 0.16);
-  top: -100px;
-  left: 20%;
-}
-.glow-sphere-2 {
-  width: 480px;
-  height: 480px;
-  background: rgba(161, 61, 255, 0.18);
-  bottom: -120px;
-  right: 15%;
 }
 
 .auth-container {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: 1240px;
   width: 100%;
   display: grid;

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import bgVideo from '../assets/landing_pg.mp4';
 import {
   Calendar,
   MapPin,
@@ -70,6 +71,19 @@ export const AuthPage = ({ onBackToLanding }) => {
     };
   }, []);
 
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
+    }
+  }, []);
+
   const handleTabChange = (nextMode) => {
     setMode(nextMode);
     setError('');
@@ -132,20 +146,21 @@ export const AuthPage = ({ onBackToLanding }) => {
 
   return (
     <div className="auth-wrapper">
-      {/* Background Video Loop */}
+      {/* Background Video Loop - Login Page Exclusive */}
       <video
+        ref={videoRef}
         className="auth-bg-video"
-        src="/landing_pg.mp4"
         autoPlay
         loop
         muted
         playsInline
-      />
+        preload="auto"
+      >
+        <source src={bgVideo} type="video/mp4" />
+        <source src="/landing_pg.mp4" type="video/mp4" />
+        <source src="/videos/landing_bg.mp4" type="video/mp4" />
+      </video>
       <div className="auth-video-overlay" />
-
-      {/* Background Ambience Elements */}
-      <div className="glow-sphere glow-sphere-1" />
-      <div className="glow-sphere glow-sphere-2" />
 
       <div className="auth-container">
         {/* LEFT COLUMN: HERO & BRANDING */}

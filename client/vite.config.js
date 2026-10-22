@@ -15,7 +15,12 @@ export default defineConfig({
       '/landing': {
         target: 'http://localhost:5001',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        bypass: (req) => {
+          if (req.url && req.url.endsWith('.mp4')) {
+            return req.url;
+          }
+        }
       },
       '/static': {
         target: 'http://localhost:5001',
