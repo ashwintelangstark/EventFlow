@@ -170,6 +170,9 @@ export const AdminPortal = ({ onGoToLanding }) => {
   // Edit Announcement Modal State
   const [editingAnnouncement, setEditingAnnouncement] = useState(null);
 
+  // Edit Registration Modal State
+  const [editingRegistration, setEditingRegistration] = useState(null);
+
   // Edit / Add Stage Modal State
   const [editingStage, setEditingStage] = useState(null);
   const [isNewStage, setIsNewStage] = useState(false);
@@ -273,10 +276,12 @@ export const AdminPortal = ({ onGoToLanding }) => {
     setAttendees((prev) =>
       prev.map((a) => {
         if (a.id === id || a.email === id) {
+          const nowStr = `${new Date().getDate()} Oct, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
           const updated = {
             ...a,
             status: nextStatus,
-            date: nextStatus === 'Checked In' ? '24 Oct, Checked In' : a.date
+            date: a.date || a.registeredAt || nowStr,
+            checkedInAt: nextStatus === 'Checked In' ? nowStr : null
           };
           if (selectedAttendee && (selectedAttendee.id === a.id || selectedAttendee.email === a.email)) {
             setSelectedAttendee(updated);
@@ -440,6 +445,57 @@ export const AdminPortal = ({ onGoToLanding }) => {
     showToast('Announcement deleted');
   };
 
+  // ================= ADMIN REGISTRATION CRUD =================
+  const handleUpdateRegistration = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!editingRegistration) return;
+
+    const nowStr = `${new Date().getDate()} Oct, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const updated = {
+      ...editingRegistration,
+      name: editingRegistration.name?.trim() || 'Participant',
+      email: editingRegistration.email?.trim() || '',
+      phone: editingRegistration.phone?.trim() || '',
+      category: editingRegistration.category || 'Student',
+      organization: editingRegistration.organization?.trim() || 'Alliance University',
+      designation: editingRegistration.designation?.trim() || 'Participant',
+      status: editingRegistration.status || 'Registered',
+      date: editingRegistration.date || editingRegistration.registeredAt || nowStr,
+      checkedInAt: editingRegistration.status === 'Checked In' ? (editingRegistration.checkedInAt || nowStr) : null
+    };
+
+    setAttendees((prev) =>
+      prev.map((a) => (a.id === editingRegistration.id ? { ...a, ...updated } : a))
+    );
+    if (selectedAttendee && selectedAttendee.id === editingRegistration.id) {
+      setSelectedAttendee((prev) => ({ ...prev, ...updated }));
+    }
+
+    try {
+      await api.updateRegistration(editingRegistration.id, updated);
+      showToast('Registration updated successfully');
+    } catch (err) {
+      console.error('Registration update error:', err);
+      showToast(`Error updating registration: ${err.message}`);
+    }
+    setEditingRegistration(null);
+  };
+
+  const handleDeleteRegistration = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this registration?')) return;
+    setAttendees((prev) => prev.filter((a) => a.id !== id));
+    if (selectedAttendee && selectedAttendee.id === id) {
+      setSelectedAttendee(null);
+    }
+    try {
+      await api.deleteRegistration(id);
+      showToast('Registration deleted');
+    } catch (err) {
+      console.error('Registration delete error:', err);
+      showToast(`Error deleting registration: ${err.message}`);
+    }
+  };
+
   // ================= ADMIN EVENT FLOW CRUD =================
   const handleSaveStage = (e) => {
     e.preventDefault();
@@ -521,6 +577,105 @@ export const AdminPortal = ({ onGoToLanding }) => {
           <div className="toast">
             <CheckCircle2 size={15} />
             <span>{toast}</span>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT REGISTRATION MODAL (ADMIN ONLY) */}
+      {editingRegistration && (
+        <div className="modal-overlay" onClick={() => setEditingRegistration(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="card-head">
+              <h3>Edit Registration</h3>
+              <button type="button" className="btn btn-ghost" onClick={() => setEditingRegistration(null)}>
+                <X size={15} />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateRegistration} className="form-vertical" style={{ marginTop: '10px' }}>
+              <div className="input-group">
+                <label>Full Name *</label>
+                <input
+                  required
+                  placeholder="Participant full name"
+                  value={editingRegistration.name || ''}
+                  onChange={(e) => setEditingRegistration({ ...editingRegistration, name: e.target.value })}
+                />
+              </div>
+              <div className="form-two-col">
+                <div className="input-group">
+                  <label>Email Address *</label>
+                  <input
+                    required
+                    type="email"
+                    placeholder="email@example.com"
+                    value={editingRegistration.email || ''}
+                    onChange={(e) => setEditingRegistration({ ...editingRegistration, email: e.target.value })}
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Phone Number *</label>
+                  <input
+                    required
+                    placeholder="+91 contact"
+                    value={editingRegistration.phone || ''}
+                    onChange={(e) => setEditingRegistration({ ...editingRegistration, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="form-two-col">
+                <div className="input-group">
+                  <label>Category *</label>
+                  <select
+                    value={editingRegistration.category || 'Student'}
+                    onChange={(e) => setEditingRegistration({ ...editingRegistration, category: e.target.value })}
+                  >
+                    <option>Student</option>
+                    <option>Working Professional</option>
+                    <option>Founder</option>
+                    <option>Researcher</option>
+                    <option>Startup</option>
+                    <option>Developer</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Status *</label>
+                  <select
+                    value={editingRegistration.status || 'Registered'}
+                    onChange={(e) => setEditingRegistration({ ...editingRegistration, status: e.target.value })}
+                  >
+                    <option>Registered</option>
+                    <option>Checked In</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-two-col">
+                <div className="input-group">
+                  <label>Organization</label>
+                  <input
+                    placeholder="University or company"
+                    value={editingRegistration.organization || ''}
+                    onChange={(e) => setEditingRegistration({ ...editingRegistration, organization: e.target.value })}
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Designation / Role</label>
+                  <input
+                    placeholder="Participant, Lead, etc."
+                    value={editingRegistration.designation || ''}
+                    onChange={(e) => setEditingRegistration({ ...editingRegistration, designation: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setEditingRegistration(null)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -1036,7 +1191,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
                         <th>Category</th>
                         <th>Organization</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1067,15 +1222,36 @@ export const AdminPortal = ({ onGoToLanding }) => {
                                 {a.status}
                               </span>
                             </td>
-                            <td>
-                              <button
-                                type="button"
-                                className="btn btn-ghost"
-                                style={{ padding: '2px 7px', fontSize: '10.5px' }}
-                                onClick={() => toggleCheckin(a.id)}
-                              >
-                                {a.status === 'Checked In' ? 'Undo' : 'Check In'}
-                              </button>
+                            <td style={{ textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', gap: '5px', alignItems: 'center' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost"
+                                  style={{ padding: '2px 7px', fontSize: '10.5px' }}
+                                  onClick={() => toggleCheckin(a.id)}
+                                  title={a.status === 'Checked In' ? 'Undo check-in' : 'Check in participant'}
+                                >
+                                  {a.status === 'Checked In' ? 'Undo' : 'Check In'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-action-btn"
+                                  onClick={() => setEditingRegistration(a)}
+                                  title="Edit registration"
+                                >
+                                  <Edit2 size={12} />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-action-btn delete"
+                                  onClick={() => handleDeleteRegistration(a.id)}
+                                  title="Delete registration"
+                                >
+                                  <Trash2 size={12} />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -1208,7 +1384,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
                     <strong>{totalCheckedIn}</strong>
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: `${(totalCheckedIn / totalRegistrations) * 100}%`, background: 'var(--accent-green)' }} /></div>
+                <div className="bar-track"><span style={{ width: `${totalRegistrations > 0 ? (totalCheckedIn / totalRegistrations) * 100 : 0}%`, background: 'var(--accent-green)' }} /></div>
               </div>
 
               <div className="stat-card">
@@ -1219,7 +1395,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
                     <strong>{totalYetToArrive}</strong>
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: `${(totalYetToArrive / totalRegistrations) * 100}%`, background: 'var(--accent-amber)' }} /></div>
+                <div className="bar-track"><span style={{ width: `${totalRegistrations > 0 ? (totalYetToArrive / totalRegistrations) * 100 : 0}%`, background: 'var(--accent-amber)' }} /></div>
               </div>
 
               <div className="stat-card">
@@ -1266,7 +1442,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
 
                       <div className="attendee-card-body">
                         <div className="attendee-large-avatar">
-                          {selectedAttendee.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                          {selectedAttendee.name ? selectedAttendee.name.split(' ').map((n) => n[0]).slice(0, 2).join('') : 'P'}
                         </div>
                         <div>
                           <h4 style={{ fontSize: '14px' }}>{selectedAttendee.name}</h4>
@@ -1277,8 +1453,8 @@ export const AdminPortal = ({ onGoToLanding }) => {
                           </div>
                           <div className="text-dim" style={{ fontSize: '11px', lineHeight: '1.4' }}>
                             <div>📧 {selectedAttendee.email}</div>
-                            <div>📞 {selectedAttendee.phone}</div>
-                            <div>🏛️ {selectedAttendee.organization}</div>
+                            <div>📞 {selectedAttendee.phone || 'N/A'}</div>
+                            <div>🏛️ {selectedAttendee.organization || 'Alliance University'}</div>
                           </div>
                         </div>
                       </div>
@@ -1286,7 +1462,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
                       <div className="reg-id-badge">
                         <strong>Registration ID: {selectedAttendee.id}</strong>
                         <p style={{ margin: 0, color: 'var(--text-dim)', fontSize: '10px' }}>
-                          Registered: {selectedAttendee.date}
+                          Registered: {selectedAttendee.date || selectedAttendee.registeredAt || '24 Oct, 10:00 AM'}
                         </p>
                       </div>
 
@@ -1330,18 +1506,30 @@ export const AdminPortal = ({ onGoToLanding }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {attendees
-                        .filter((a) => a.status === 'Checked In')
-                        .slice(0, 6)
-                        .map((a, i) => (
-                          <tr key={a.id || i}>
-                            <td>{i + 1}</td>
-                            <td><strong>{a.name}</strong></td>
-                            <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
-                            <td>{a.organization}</td>
-                            <td>{a.date.split(', ')[1] || '09:30 AM'}</td>
-                          </tr>
-                        ))}
+                      {attendees.filter((a) => a.status === 'Checked In').length === 0 ? (
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', padding: '32px 12px', color: 'var(--text-dim)', fontSize: '12.5px' }}>
+                            No attendees checked in yet. Check in attendees using the search or the Registrations tab.
+                          </td>
+                        </tr>
+                      ) : (
+                        attendees
+                          .filter((a) => a.status === 'Checked In')
+                          .slice(0, 6)
+                          .map((a, i) => {
+                            const timeStr = a.checkedInAt || a.date || a.registeredAt || '';
+                            const displayTime = timeStr && timeStr.includes(', ') ? timeStr.split(', ')[1] : (timeStr || '10:00 AM');
+                            return (
+                              <tr key={a.id || i}>
+                                <td>{i + 1}</td>
+                                <td><strong>{a.name}</strong></td>
+                                <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
+                                <td>{a.organization}</td>
+                                <td>{displayTime}</td>
+                              </tr>
+                            );
+                          })
+                      )}
                     </tbody>
                   </table>
                 </div>

@@ -25,6 +25,7 @@ const formatAttendee = (row) => {
     areasOfInterest: row.areas_of_interest || [],
     notes: row.additional_info || '',
     status: row.status || 'Registered',
+    date: dateFormatted,
     registeredAt: dateFormatted,
     checkedInAt: checkInFormatted
   };
@@ -280,6 +281,67 @@ router.patch('/:id/checkin', async (req, res) => {
     } catch (err) {
       console.error('Checkin update error:', err);
       return res.status(500).json({ error: 'Failed to update check-in status' });
+    }
+  }
+
+  res.status(503).json({ error: 'Database service unavailable' });
+});
+
+// PATCH /api/registrations/:id - Update participant details
+router.patch('/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    name,
+    email,
+    phone,
+    category,
+    organization,
+    designation,
+    department,
+    dietaryPreference,
+    areasOfInterest,
+    notes,
+    status
+  } = req.body;
+
+  if (isSupabaseConfigured && supabaseAdmin) {
+    try {
+      const updateData = {};
+      if (name !== undefined) updateData.full_name = name.trim();
+      if (email !== undefined) updateData.email = email.trim().toLowerCase();
+      if (phone !== undefined) updateData.phone = phone.trim();
+      if (category !== undefined) updateData.category = category;
+      if (organization !== undefined) updateData.organization = organization;
+      if (designation !== undefined) updateData.designation = designation;
+      if (department !== undefined) updateData.department = department;
+      if (dietaryPreference !== undefined) updateData.dietary_preference = dietaryPreference;
+      if (areasOfInterest !== undefined) updateData.areas_of_interest = areasOfInterest;
+      if (notes !== undefined) updateData.additional_info = notes;
+      if (status !== undefined) {
+        updateData.status = status;
+        if (status === 'Checked In') {
+          updateData.checked_in_at = new Date().toISOString();
+        } else if (status === 'Registered') {
+          updateData.checked_in_at = null;
+        }
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from('registrations')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return res.json({
+        message: 'Registration updated successfully',
+        attendee: formatAttendee(data)
+      });
+    } catch (err) {
+      console.error('Update registration error:', err);
+      return res.status(500).json({ error: err.message || 'Failed to update registration' });
     }
   }
 

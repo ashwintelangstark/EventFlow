@@ -47,6 +47,7 @@ const formatAttendee = (row) => {
     areasOfInterest: row.areas_of_interest || [],
     notes: row.additional_info || '',
     status: row.status || 'Registered',
+    date: dateFormatted,
     registeredAt: dateFormatted,
     checkedInAt: checkInFormatted
   };
@@ -341,6 +342,48 @@ export const api = {
         checked_in_at: status === 'Checked In' ? new Date().toISOString() : null
       };
       const { data, error } = await supabase.from('registrations').update(updateData).eq('id', id).select().single();
+      if (!error && data) return { attendee: formatAttendee(data) };
+    }
+
+    return { success: true };
+  },
+
+  async updateRegistration(id, payload) {
+    try {
+      const res = await fetch(`${API_BASE}/registrations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('Backend API update registration fallback:', err.message);
+    }
+
+    if (isSupabaseDirectReady && supabase) {
+      const updateData = {};
+      if (payload.name !== undefined) updateData.full_name = payload.name;
+      if (payload.email !== undefined) updateData.email = payload.email;
+      if (payload.phone !== undefined) updateData.phone = payload.phone;
+      if (payload.category !== undefined) updateData.category = payload.category;
+      if (payload.organization !== undefined) updateData.organization = payload.organization;
+      if (payload.designation !== undefined) updateData.designation = payload.designation;
+      if (payload.department !== undefined) updateData.department = payload.department;
+      if (payload.status !== undefined) {
+        updateData.status = payload.status;
+        if (payload.status === 'Checked In') {
+          updateData.checked_in_at = new Date().toISOString();
+        } else if (payload.status === 'Registered') {
+          updateData.checked_in_at = null;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('registrations')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
       if (!error && data) return { attendee: formatAttendee(data) };
     }
 
