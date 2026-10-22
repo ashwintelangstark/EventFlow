@@ -41,3 +41,6 @@ pnpm-debug.log*
 meta.bat
 meta
 *.zip
+server/landing_pg.mp4
+server/static/
+client/public/landing/landing_pg.mp4
