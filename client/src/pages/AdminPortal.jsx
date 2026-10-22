@@ -147,9 +147,37 @@ export const AdminPortal = ({ onGoToLanding }) => {
   const [statusFilter, setStatusFilter] = useState('');
   const [announcementSearch, setAnnouncementSearch] = useState('');
 
-  // Check-In Station search
+  // Check-In Station search & selection (synchronized with all sections)
   const [checkSearch, setCheckSearch] = useState('');
-  const [selectedAttendee, setSelectedAttendee] = useState(null);
+  const [selectedAttendeeId, setSelectedAttendeeId] = useState(null);
+
+  // Live matching participants for the Check-In search bar
+  const checkMatches = React.useMemo(() => {
+    if (!checkSearch.trim()) return [];
+    const q = checkSearch.toLowerCase().trim();
+    return attendees.filter((a) =>
+      [a.name, a.email, a.phone, a.organization, a.id, a.category].some((field) =>
+        String(field || '').toLowerCase().includes(q)
+      )
+    );
+  }, [checkSearch, attendees]);
+
+  // Directly derive selectedAttendee from live attendees array so it never desyncs across any tab.
+  // When searching, if an attendee is explicitly selected and in matches, use them;
+  // otherwise automatically show the top matching attendee so their full verification card appears immediately below the search bar!
+  const selectedAttendee = React.useMemo(() => {
+    if (checkSearch.trim()) {
+      if (selectedAttendeeId) {
+        const found = checkMatches.find((a) => a.id === selectedAttendeeId || a.email === selectedAttendeeId);
+        if (found) return found;
+      }
+      return checkMatches.length > 0 ? checkMatches[0] : null;
+    }
+    if (selectedAttendeeId) {
+      return attendees.find((a) => a.id === selectedAttendeeId || a.email === selectedAttendeeId) || null;
+    }
+    return null;
+  }, [selectedAttendeeId, attendees, checkSearch, checkMatches]);
 
   // Forms
   const [newReg, setNewReg] = useState({
@@ -266,37 +294,40 @@ export const AdminPortal = ({ onGoToLanding }) => {
     }));
   }, [attendees]);
 
-  // Toggle Checkin
+  // Toggle Checkin - synchronized across Check-In, Registrations, Attendees, and Dashboard
   const toggleCheckin = async (id) => {
     const attendee = attendees.find((a) => a.id === id || a.email === id);
     if (!attendee) return;
     const nextStatus = attendee.status === 'Checked In' ? 'Registered' : 'Checked In';
+    const datePart = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    const timePart = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const nowStr = `${datePart}, ${timePart}`;
 
-    // Optimistic state update
+    // Optimistic state update across all sections
     setAttendees((prev) =>
       prev.map((a) => {
         if (a.id === id || a.email === id) {
-          const nowStr = `${new Date().getDate()} Oct, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-          const updated = {
+          return {
             ...a,
             status: nextStatus,
             date: a.date || a.registeredAt || nowStr,
             checkedInAt: nextStatus === 'Checked In' ? nowStr : null
           };
-          if (selectedAttendee && (selectedAttendee.id === a.id || selectedAttendee.email === a.email)) {
-            setSelectedAttendee(updated);
-          }
-          return updated;
         }
         return a;
       })
     );
-    showToast(`${attendee.name} is now ${nextStatus}`);
+
+    // Keep active selected attendee in check-in section in sync
+    setSelectedAttendeeId(attendee.id);
+
+    showToast(`${attendee.name} marked as ${nextStatus}`);
 
     try {
       await api.toggleCheckIn(attendee.id, nextStatus);
     } catch (err) {
       console.error('Checkin update error:', err);
+      showToast(`Error updating check-in: ${err.message}`);
     }
   };
 
@@ -394,12 +425,23 @@ export const AdminPortal = ({ onGoToLanding }) => {
 
   // Handle Find Attendee in Checkin
   const handleCheckinSearch = () => {
-    if (!checkSearch.trim()) return;
+    if (!checkSearch.trim()) {
+      setSelectedAttendeeId(null);
+      return;
+    }
     const q = checkSearch.toLowerCase().trim();
     const found = attendees.find((a) =>
-      [a.name, a.email, a.phone, a.organization, a.id].some((val) => String(val).toLowerCase().includes(q))
+      [a.name, a.email, a.phone, a.organization, a.id, a.category].some((val) =>
+        String(val || '').toLowerCase().includes(q)
+      )
     );
-    setSelectedAttendee(found || null);
+    if (found) {
+      setSelectedAttendeeId(found.id);
+      showToast(`Selected ${found.name}`);
+    } else {
+      setSelectedAttendeeId(null);
+      showToast('No matching registered attendee found');
+    }
   };
 
   // ================= ADMIN ANNOUNCEMENT CRUD =================
@@ -467,9 +509,6 @@ export const AdminPortal = ({ onGoToLanding }) => {
     setAttendees((prev) =>
       prev.map((a) => (a.id === editingRegistration.id ? { ...a, ...updated } : a))
     );
-    if (selectedAttendee && selectedAttendee.id === editingRegistration.id) {
-      setSelectedAttendee((prev) => ({ ...prev, ...updated }));
-    }
 
     try {
       await api.updateRegistration(editingRegistration.id, updated);
@@ -484,8 +523,8 @@ export const AdminPortal = ({ onGoToLanding }) => {
   const handleDeleteRegistration = async (id) => {
     if (!window.confirm('Are you sure you want to delete this registration?')) return;
     setAttendees((prev) => prev.filter((a) => a.id !== id));
-    if (selectedAttendee && selectedAttendee.id === id) {
-      setSelectedAttendee(null);
+    if (selectedAttendeeId === id) {
+      setSelectedAttendeeId(null);
     }
     try {
       await api.deleteRegistration(id);
@@ -552,13 +591,13 @@ export const AdminPortal = ({ onGoToLanding }) => {
   // Filtered lists
   const filteredRegs = attendees.filter((a) =>
     [a.name, a.email, a.phone, a.organization, a.category].some((v) =>
-      v.toLowerCase().includes(regSearch.toLowerCase())
+      String(v || '').toLowerCase().includes(regSearch.toLowerCase())
     )
   );
 
   const filteredAttendees = attendees.filter((a) => {
-    const matchQ = [a.name, a.email, a.phone, a.organization].some((v) =>
-      v.toLowerCase().includes(attendeeSearch.toLowerCase())
+    const matchQ = [a.name, a.email, a.phone, a.organization, a.category].some((v) =>
+      String(v || '').toLowerCase().includes(attendeeSearch.toLowerCase())
     );
     const matchCat = !categoryFilter || a.category === categoryFilter;
     const matchStatus = !statusFilter || a.status === statusFilter;
@@ -1413,28 +1452,133 @@ export const AdminPortal = ({ onGoToLanding }) => {
             <div className="two-col-grid" style={{ marginTop: '10px' }}>
               <div>
                 <div className="card">
-                  <h3>Search Attendee</h3>
+                  <div className="card-head">
+                    <div>
+                      <h3>Search & Check-In Attendee</h3>
+                      <p className="text-muted" style={{ fontSize: '11px', marginTop: '1px' }}>
+                        Search any participant by name, email, phone, or ID to verify details and check them in.
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="search-filter-row" style={{ marginTop: '8px' }}>
                     <div className="input-field" style={{ flex: 1 }}>
                       <Search size={14} className="field-icon" />
                       <input
-                        placeholder="Name, email, or phone..."
+                        placeholder="Search by name, email, phone, or registration ID..."
                         value={checkSearch}
-                        onChange={(e) => setCheckSearch(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCheckSearch(val);
+                          if (!val.trim()) {
+                            setSelectedAttendeeId(null);
+                          } else {
+                            const q = val.toLowerCase().trim();
+                            const matches = attendees.filter((a) =>
+                              [a.name, a.email, a.phone, a.organization, a.id, a.category].some((field) =>
+                                String(field || '').toLowerCase().includes(q)
+                              )
+                            );
+                            if (matches.length === 1) {
+                              setSelectedAttendeeId(matches[0].id);
+                            }
+                          }
+                        }}
                         onKeyDown={(e) => e.key === 'Enter' && handleCheckinSearch()}
                       />
                     </div>
                     <button type="button" className="btn btn-purple" onClick={handleCheckinSearch}>
                       Search
                     </button>
+                    {checkSearch && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => {
+                          setCheckSearch('');
+                          setSelectedAttendeeId(null);
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
-                </div>
 
-                <div className="card" style={{ marginTop: '10px' }}>
+                  {/* Multiple Live Matching Results */}
+                  {checkSearch.trim() && checkMatches.length > 1 && (
+                    <div style={{ marginTop: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          Found <strong>{checkMatches.length}</strong> matching participants — click one to view full verification card:
+                        </span>
+                      </div>
+                      <div className="checkin-results-list">
+                        {checkMatches.map((m) => {
+                          const isSel = selectedAttendee && selectedAttendee.id === m.id;
+                          return (
+                            <div
+                              key={m.id}
+                              className={`checkin-result-item ${isSel ? 'selected' : ''}`}
+                              onClick={() => setSelectedAttendeeId(m.id)}
+                            >
+                              <div className="checkin-result-user">
+                                <span className="initial" style={{ width: '28px', height: '28px', fontSize: '11px' }}>
+                                  {m.name ? m.name.split(' ').map((n) => n[0]).slice(0, 2).join('') : 'P'}
+                                </span>
+                                <div>
+                                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#ffffff' }}>
+                                    {m.name}
+                                    <span className={`pill ${getCategoryClass(m.category)}`} style={{ marginLeft: '6px', fontSize: '9.5px', padding: '1px 5px' }}>
+                                      {m.category}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '10.5px', color: 'var(--text-dim)' }}>
+                                    {m.email} {m.phone ? `• ${m.phone}` : ''} • {m.organization}
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className={`pill ${m.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`} style={{ fontSize: '10px' }}>
+                                  {m.status}
+                                </span>
+                                <button
+                                  type="button"
+                                  className={`btn ${m.status === 'Checked In' ? 'btn-ghost' : 'btn-primary'}`}
+                                  style={{ padding: '3px 8px', fontSize: '10.5px' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleCheckin(m.id);
+                                  }}
+                                  title={m.status === 'Checked In' ? 'Undo check-in' : 'Check in participant'}
+                                >
+                                  {m.status === 'Checked In' ? 'Undo' : 'Check In'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No Match Notice */}
+                  {checkSearch.trim() && checkMatches.length === 0 && (
+                    <div className="empty-box" style={{ marginTop: '10px' }}>
+                      <p style={{ margin: 0 }}>No registered participant found matching "<strong>{checkSearch}</strong>".</p>
+                      <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'var(--text-dim)' }}>
+                        Check the spelling of the name, email, phone number, or registration ID.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Selected / Single-match Attendee Verification & Check-In Card (Directly Below Search Bar) */}
                   {selectedAttendee ? (
-                    <div className="attendee-detail-panel">
-                      <div className="card-head">
-                        <h3>Attendee Verification</h3>
+                    <div className="attendee-detail-panel" style={{ marginTop: '12px' }}>
+                      <div className="card-head" style={{ paddingBottom: '6px', borderBottom: '1px solid var(--border-glass)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <CheckCircle2 size={16} style={{ color: selectedAttendee.status === 'Checked In' ? 'var(--accent-green)' : 'var(--accent-amber)' }} />
+                          <h4 style={{ margin: 0, fontSize: '13px' }}>Attendee Verification Details</h4>
+                        </div>
                         <span className={`pill ${selectedAttendee.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
                           {selectedAttendee.status}
                         </span>
@@ -1444,43 +1588,85 @@ export const AdminPortal = ({ onGoToLanding }) => {
                         <div className="attendee-large-avatar">
                           {selectedAttendee.name ? selectedAttendee.name.split(' ').map((n) => n[0]).slice(0, 2).join('') : 'P'}
                         </div>
-                        <div>
-                          <h4 style={{ fontSize: '14px' }}>{selectedAttendee.name}</h4>
-                          <div style={{ margin: '2px 0 4px' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <h4 style={{ fontSize: '15px', margin: 0, fontWeight: '700' }}>{selectedAttendee.name}</h4>
                             <span className={`pill ${getCategoryClass(selectedAttendee.category)}`}>
                               {selectedAttendee.category}
                             </span>
+                            <span className={`pill ${selectedAttendee.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
+                              {selectedAttendee.status}
+                            </span>
                           </div>
-                          <div className="text-dim" style={{ fontSize: '11px', lineHeight: '1.4' }}>
-                            <div>📧 {selectedAttendee.email}</div>
-                            <div>📞 {selectedAttendee.phone || 'N/A'}</div>
-                            <div>🏛️ {selectedAttendee.organization || 'Alliance University'}</div>
+
+                          <div className="text-dim" style={{ fontSize: '11.5px', lineHeight: '1.5', marginTop: '4px' }}>
+                            <div>📧 <strong>Email:</strong> {selectedAttendee.email}</div>
+                            <div>📞 <strong>Phone:</strong> {selectedAttendee.phone || 'N/A'}</div>
+                            <div>🏛️ <strong>Organization:</strong> {selectedAttendee.organization || 'Alliance University'}</div>
+                            {selectedAttendee.designation && (
+                              <div>💼 <strong>Designation:</strong> {selectedAttendee.designation}</div>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="reg-id-badge">
-                        <strong>Registration ID: {selectedAttendee.id}</strong>
-                        <p style={{ margin: 0, color: 'var(--text-dim)', fontSize: '10px' }}>
-                          Registered: {selectedAttendee.date || selectedAttendee.registeredAt || '24 Oct, 10:00 AM'}
-                        </p>
+                      <div className="reg-id-badge" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                        <div>
+                          <strong>Registration ID: {selectedAttendee.id}</strong>
+                          <p style={{ margin: '2px 0 0', color: 'var(--text-dim)', fontSize: '10.5px' }}>
+                            Registered: {selectedAttendee.date || selectedAttendee.registeredAt || '24 Oct, 10:00 AM'}
+                          </p>
+                        </div>
+                        {selectedAttendee.checkedInAt && (
+                          <div style={{ fontSize: '10.5px', color: 'var(--accent-green)', fontWeight: '600' }}>
+                            ✓ Gate Arrival: {selectedAttendee.checkedInAt}
+                          </div>
+                        )}
                       </div>
 
-                      <button
-                        type="button"
-                        className={`btn btn-full ${selectedAttendee.status === 'Checked In' ? 'btn-ghost' : 'btn-primary'}`}
-                        style={{ padding: '9px', fontSize: '12px' }}
-                        onClick={() => toggleCheckin(selectedAttendee.id)}
-                      >
-                        {selectedAttendee.status === 'Checked In' ? 'Undo Check-In' : '✓ Check In Attendee'}
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <button
+                          type="button"
+                          className={`btn btn-full ${selectedAttendee.status === 'Checked In' ? 'btn-ghost' : 'btn-primary'}`}
+                          style={{
+                            padding: '10px 14px',
+                            fontSize: '12.5px',
+                            fontWeight: '600',
+                            flex: 2,
+                            background: selectedAttendee.status === 'Checked In'
+                              ? 'rgba(255, 255, 255, 0.08)'
+                              : 'linear-gradient(135deg, #00d26a 0%, #00a854 100%)',
+                            color: '#ffffff',
+                            border: selectedAttendee.status === 'Checked In' ? '1px solid var(--border-glass)' : 'none',
+                            boxShadow: selectedAttendee.status === 'Checked In' ? 'none' : '0 4px 14px rgba(0, 210, 106, 0.35)',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => toggleCheckin(selectedAttendee.id)}
+                        >
+                          {selectedAttendee.status === 'Checked In' ? '✓ Checked In (Click to Undo Check-In)' : '✓ Check In Attendee Now'}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          style={{ padding: '10px 12px', fontSize: '11.5px', flex: 1 }}
+                          onClick={() => setEditingRegistration(selectedAttendee)}
+                          title="Edit participant details"
+                        >
+                          <Edit2 size={13} style={{ marginRight: '4px' }} />
+                          <span>Edit</span>
+                        </button>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="empty-box">
+                  ) : !checkSearch.trim() ? (
+                    <div className="empty-box" style={{ marginTop: '10px' }}>
                       <QrCode size={28} className="text-dim" style={{ marginBottom: '6px' }} />
-                      <p>Search for a registered participant to verify credentials and check them in.</p>
+                      <p style={{ margin: 0 }}>Search for a participant above to verify their details and mark gate arrival.</p>
+                      <p style={{ margin: '4px 0 0', fontSize: '10.5px', color: 'var(--text-dim)' }}>
+                        All check-in actions update immediately across Registrations, Attendees, and Analytics.
+                      </p>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
@@ -1520,7 +1706,15 @@ export const AdminPortal = ({ onGoToLanding }) => {
                             const timeStr = a.checkedInAt || a.date || a.registeredAt || '';
                             const displayTime = timeStr && timeStr.includes(', ') ? timeStr.split(', ')[1] : (timeStr || '10:00 AM');
                             return (
-                              <tr key={a.id || i}>
+                              <tr
+                                key={a.id || i}
+                                onClick={() => {
+                                  setSelectedAttendeeId(a.id);
+                                  setCheckSearch(a.name);
+                                }}
+                                style={{ cursor: 'pointer' }}
+                                title="Click to view & verify attendee card"
+                              >
                                 <td>{i + 1}</td>
                                 <td><strong>{a.name}</strong></td>
                                 <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
@@ -1558,10 +1752,10 @@ export const AdminPortal = ({ onGoToLanding }) => {
                   <div className="stat-card-icon purple">🎓</div>
                   <div>
                     <div className="stat-card-label">Students</div>
-                    <strong>78</strong>
+                    <strong>{attendees.filter((a) => (a.category || '').toLowerCase().includes('student')).length}</strong>
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: '42%', background: 'var(--accent-purple)' }} /></div>
+                <div className="bar-track"><span style={{ width: `${totalRegistrations > 0 ? (attendees.filter((a) => (a.category || '').toLowerCase().includes('student')).length / totalRegistrations) * 100 : 0}%`, background: 'var(--accent-purple)' }} /></div>
               </div>
 
               <div className="stat-card">
@@ -1569,21 +1763,21 @@ export const AdminPortal = ({ onGoToLanding }) => {
                   <div className="stat-card-icon pink">💼</div>
                   <div>
                     <div className="stat-card-label">Working Pros</div>
-                    <strong>26</strong>
+                    <strong>{attendees.filter((a) => (a.category || '').toLowerCase().includes('professional')).length}</strong>
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: '14%', background: 'var(--accent-magenta)' }} /></div>
+                <div className="bar-track"><span style={{ width: `${totalRegistrations > 0 ? (attendees.filter((a) => (a.category || '').toLowerCase().includes('professional')).length / totalRegistrations) * 100 : 0}%`, background: 'var(--accent-magenta)' }} /></div>
               </div>
 
               <div className="stat-card">
                 <div className="stat-card-row">
-                  <div className="stat-card-icon green">🚀</div>
+                  <div className="stat-card-icon green"><CheckCircle2 size={18} /></div>
                   <div>
-                    <div className="stat-card-label">Founders</div>
-                    <strong>18</strong>
+                    <div className="stat-card-label">Checked In</div>
+                    <strong>{totalCheckedIn}</strong>
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: '10%', background: 'var(--accent-green)' }} /></div>
+                <div className="bar-track"><span style={{ width: `${totalRegistrations > 0 ? (totalCheckedIn / totalRegistrations) * 100 : 0}%`, background: 'var(--accent-green)' }} /></div>
               </div>
             </div>
 
@@ -1663,12 +1857,13 @@ export const AdminPortal = ({ onGoToLanding }) => {
                       <th>Organization</th>
                       <th>Status</th>
                       <th>Registered</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredAttendees.length === 0 ? (
                       <tr>
-                        <td colSpan={9} style={{ textAlign: 'center', padding: '36px 12px', color: 'var(--text-dim)', fontSize: '13px' }}>
+                        <td colSpan={10} style={{ textAlign: 'center', padding: '36px 12px', color: 'var(--text-dim)', fontSize: '13px' }}>
                           No attendees registered yet.
                         </td>
                       </tr>
@@ -1695,6 +1890,19 @@ export const AdminPortal = ({ onGoToLanding }) => {
                             </span>
                           </td>
                           <td>{a.date || a.registeredAt || '24 Oct'}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', gap: '5px' }}>
+                              <button
+                                type="button"
+                                className={`btn ${a.status === 'Checked In' ? 'btn-ghost' : 'btn-primary'}`}
+                                style={{ padding: '2px 7px', fontSize: '10.5px' }}
+                                onClick={() => toggleCheckin(a.id)}
+                                title={a.status === 'Checked In' ? 'Undo check-in' : 'Check in attendee'}
+                              >
+                                {a.status === 'Checked In' ? 'Undo' : 'Check In'}
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       ))
                     )}
