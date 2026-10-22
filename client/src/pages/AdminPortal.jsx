@@ -657,9 +657,6 @@ export const AdminPortal = ({ onGoToLanding }) => {
       {/* SIDEBAR */}
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <div className="partner-logo-badge" title="DataDice Technologies · AU-QUASAR · Alliance University">
-            <img src="/images/event_partners_banner.png" alt="DataDice · AU-QUASAR · Alliance University" />
-          </div>
           <div className="brand-logo">
             IDEA → AI → <br />
             <span>IMPACT</span>
@@ -733,11 +730,6 @@ export const AdminPortal = ({ onGoToLanding }) => {
         </nav>
 
         <div className="admin-sidebar-bottom">
-          <div className="alliance-title">◉ ALLIANCE<br />　UNIVERSITY</div>
-          <div className="quasar-tag">
-            AU-QUASAR
-            <small>INNOVATION · RESEARCH · IMPACT</small>
-          </div>
           <button type="button" className="sidebar-logout-btn" onClick={logout}>
             <LogOut size={13} />
             <span>Sign Out</span>

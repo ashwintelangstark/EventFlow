@@ -167,14 +167,6 @@ export const AuthPage = ({ onBackToLanding }) => {
         <div className="auth-hero">
           {/* Top Brand Header */}
           <div className="hero-top">
-            <div className="partner-logo-banner-card" title="DataDice Technologies · AU-QUASAR · Alliance University">
-              <img
-                src="/images/event_partners_banner.png"
-                alt="DataDice Technologies · AU-QUASAR · Alliance University"
-                className="partner-banner-img"
-              />
-            </div>
-
             <div className="hero-motto">
               <div>IDEAS</div>
               <div>TECHNOLOGY</div>

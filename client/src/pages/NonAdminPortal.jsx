@@ -331,9 +331,6 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
       {/* SIDEBAR */}
       <aside className="nonadmin-sidebar">
         <div className="nonadmin-brand">
-          <div className="partner-logo-badge" title="DataDice Technologies · AU-QUASAR · Alliance University">
-            <img src="/images/event_partners_banner.png" alt="DataDice · AU-QUASAR · Alliance University" />
-          </div>
           <div className="brand-title">
             IDEA → AI → <br />
             <span>IMPACT</span>
@@ -380,11 +377,6 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
         </nav>
 
         <div className="nonadmin-sidebar-bottom">
-          <div className="alliance-title">◉ ALLIANCE<br />　UNIVERSITY</div>
-          <div className="quasar-tag">
-            AU-QUASAR
-            <small>INNOVATION · RESEARCH · IMPACT</small>
-          </div>
           <button type="button" className="sidebar-logout-btn" onClick={logout}>
             <LogOut size={13} />
             <span>Sign Out</span>
@@ -1174,14 +1166,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                 </div>
 
                 <div className="card" style={{ marginTop: '16px' }}>
-                  <h3>Event Partners</h3>
-                  <div style={{ marginTop: '12px', background: '#ffffff', borderRadius: '8px', padding: '10px' }}>
-                    <img
-                      src="/images/event_partners_banner.png"
-                      alt="DataDice Technologies · AU-QUASAR · Alliance University"
-                      style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
-                    />
-                  </div>
+                  <h3>Event Resources</h3>
                   <div className="resource-list" style={{ marginTop: '14px' }}>
                     <a href="#pdf" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Downloading Official Event Schedule PDF...'); }}>
                       <FileText size={15} />
