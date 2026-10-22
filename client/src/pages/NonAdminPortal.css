@@ -24,6 +24,25 @@
   margin: 0 6px 14px;
 }
 
+.partner-logo-badge {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.partner-logo-badge img {
+  width: 100%;
+  max-height: 36px;
+  object-fit: contain;
+  display: block;
+}
+
 .nonadmin-brand .brand-title {
   font-weight: 900;
   font-size: 18px;
@@ -515,16 +534,19 @@
 
 /* EVENT FLOW TIMELINE */
 .flow-stepper-row {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-  padding: 14px 4px;
+  display: flex;
+  overflow-x: auto;
+  gap: 14px;
+  padding: 14px 6px;
+  scrollbar-width: thin;
 }
 
 .flow-step {
   text-align: center;
   position: relative;
-  padding: 0 4px;
+  padding: 0 6px;
+  min-width: 110px;
+  flex: 1 0 110px;
 }
 
 .flow-step:not(:last-child)::after {

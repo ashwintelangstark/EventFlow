@@ -141,23 +141,12 @@ export const AuthPage = ({ onBackToLanding }) => {
         <div className="auth-hero">
           {/* Top Brand Header */}
           <div className="hero-top">
-            <div className="brand-badge-group">
-              <div className="brand-item">
-                <div className="au-crest">
-                  <span>AU</span>
-                </div>
-                <div>
-                  <div className="brand-title">ALLIANCE</div>
-                  <div className="brand-sub">UNIVERSITY</div>
-                </div>
-              </div>
-              <div className="brand-divider">|</div>
-              <div className="brand-item">
-                <div>
-                  <div className="quasar-title">AU-QUASAR ✦</div>
-                  <div className="quasar-sub">INNOVATION · RESEARCH · IMPACT</div>
-                </div>
-              </div>
+            <div className="partner-logo-banner-card" title="DataDice Technologies · AU-QUASAR · Alliance University">
+              <img
+                src="/images/event_partners_banner.png"
+                alt="DataDice Technologies · AU-QUASAR · Alliance University"
+                className="partner-banner-img"
+              />
             </div>
 
             <div className="hero-motto">

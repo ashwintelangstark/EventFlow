@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 import {
   Home,
   UserCheck,
@@ -20,52 +21,131 @@ import {
   Shield,
   Users,
   Sparkles,
-  Globe
+  Globe,
+  QrCode,
+  Ticket,
+  Building2,
+  Tag
 } from 'lucide-react';
 import './NonAdminPortal.css';
 
-const ANNOUNCEMENTS = [
+const DEFAULT_STAGES = [
   {
-    id: 1,
-    title: "Welcome to IDEA → AI → IMPACT",
-    message: "We're excited to have you at AU-QUASAR! Get ready for a half-day of innovation, learning and hands-on prototyping.",
-    type: "General",
-    date: "24 Oct 2026, 08:00 AM"
+    step: 1,
+    time: "10:00–10:15 AM",
+    title: "Welcome Address",
+    speaker: "AU-QUASAR Management",
+    desc: "Inaugural welcome and event overview by the AU-QUASAR leadership team.",
+    color: "cyan",
+    activities: [
+      "Inauguration & welcome to IDEA > AI > IMPACT",
+      "Overview of the Deep-Tech Innovation Lab",
+      "Key guidelines and team introductions"
+    ]
   },
   {
-    id: 2,
-    title: "Event Venue & Gate Logistics",
-    message: "The event is held at AU-QUASAR, Alliance University, Bengaluru. Please enter via Gate 2 for registration desks.",
-    type: "Logistics",
-    date: "23 Oct 2026, 06:00 PM"
+    step: 2,
+    time: "10:15–10:30 AM",
+    title: "Chief Guest Address",
+    speaker: "Shri. Mahadesha V · Director, STPI - Bengaluru",
+    desc: "Keynote address on India's deep-tech landscape and software technology parks ecosystem.",
+    color: "purple",
+    activities: [
+      "Address on fostering deep-tech incubation",
+      "Industry-academia innovation pathways",
+      "Government initiatives and support for startups"
+    ]
   },
   {
-    id: 3,
-    title: "Registration & Badge Verification",
-    message: "Thank you for registering! Please carry a valid government or college ID card to collect your smart badge.",
-    type: "Registration",
-    date: "20 Oct 2026, 10:00 AM"
+    step: 3,
+    time: "10:30–10:45 AM",
+    title: "Dr. Kadiyali Srivatsa",
+    speaker: "Dr. Kadiyali Srivatsa",
+    desc: "Session topic to be announced · Key research & industry perspective.",
+    color: "blue",
+    activities: [
+      "Special technical address",
+      "Deep-tech problem frameworks",
+      "Interactive attendee perspective"
+    ]
   },
   {
-    id: 4,
-    title: "Team Formation & Mentor Matchmaking",
-    message: "Team formation will happen during the event. Be ready to collaborate with participants across domains.",
-    type: "Activity",
-    date: "22 Oct 2026, 04:00 PM"
+    step: 4,
+    time: "10:45–11:00 AM",
+    title: "DataDice & CommunIDy™",
+    speaker: "Bhanu Surya on the company and the CommunIDy™ product",
+    desc: "Introducing DataDice Technologies and showcasing the CommunIDy™ innovation product.",
+    color: "cyan",
+    activities: [
+      "Presentation of DataDice & CommunIDy™ architecture",
+      "Real-world application demonstrations",
+      "Opportunities for collaboration and student tracks"
+    ]
   },
   {
-    id: 5,
-    title: "Schedule Update: Keynote Timing",
-    message: "The keynote session has been scheduled for 10:15 AM. Check the complete Event Flow tab for details.",
-    type: "Schedule",
-    date: "23 Oct 2026, 08:30 PM"
+    step: 5,
+    time: "11:00–11:15 AM",
+    title: "Snacks Break",
+    speaker: "Networking & Refreshments",
+    desc: "Networking break with refreshments at the Innovation Courtyard.",
+    color: "amber",
+    activities: [
+      "Artisan snacks & tea/coffee break",
+      "Informal networking between participants and mentors",
+      "Room briefing for competition rounds"
+    ]
   },
   {
-    id: 6,
-    title: "Lunch & Refreshments",
-    message: "Complimentary artisan refreshments and buffet lunch will be provided at the Innovation Courtyard.",
-    type: "Logistics",
-    date: "24 Oct 2026, 09:00 AM"
+    step: 6,
+    time: "11:15 AM–12:00 PM",
+    title: "Round 1 - Three Rooms",
+    speaker: "Students, startups and enthusiasts compete in three different rooms",
+    desc: "Intensive innovation track where participants present and compete across parallel evaluation rooms.",
+    color: "purple",
+    activities: [
+      "Parallel room track competitions (Students, Startups, Enthusiasts)",
+      "Domain-specific problem statement pitches",
+      "Shortlisting for the final room round"
+    ]
+  },
+  {
+    step: 7,
+    time: "12:00–12:40 PM",
+    title: "Final Round",
+    speaker: "Top two from each room - six finalists",
+    desc: "Six finalist teams face the central jury to pitch their prototypes and solutions.",
+    color: "blue",
+    activities: [
+      "Top 6 team presentations (2 from each room)",
+      "Live prototype demonstrations & defense",
+      "High-impact deep-tech evaluation"
+    ]
+  },
+  {
+    step: 8,
+    time: "12:40–12:50 PM",
+    title: "Jury Deliberation",
+    speaker: "The jury panel decides the winners",
+    desc: "Closed evaluation session by expert jury members to finalize awards and rankings.",
+    color: "cyan",
+    activities: [
+      "Scoring consolidation across rubric dimensions",
+      "Jury debate and final winner selection",
+      "Preparation of awards and citations"
+    ]
+  },
+  {
+    step: 9,
+    time: "12:50–1:00 PM",
+    title: "Winners & Closing",
+    speaker: "Winners announced, event closes",
+    desc: "Announcement of top winners, certificate distribution, and concluding remarks.",
+    color: "amber",
+    activities: [
+      "Awards ceremony and winner declarations",
+      "Closing remarks from DataDice & Alliance University leadership",
+      "Photo session and next step accelerator announcements"
+    ]
   }
 ];
 
@@ -73,6 +153,13 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [toast, setToast] = useState('');
+
+  // Live synced state from Supabase backend
+  const [registrations, setRegistrations] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [eventStages, setEventStages] = useState(DEFAULT_STAGES);
+  const [myPass, setMyPass] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Self-Registration Form State
   const [selfForm, setSelfForm] = useState({
@@ -98,6 +185,58 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
     setTimeout(() => setToast(''), 3500);
   };
 
+  // Live polling synchronization
+  const refreshData = async () => {
+    try {
+      const [regsData, annsData, flowData] = await Promise.allSettled([
+        api.getRegistrations(),
+        api.getAnnouncements(),
+        api.getEventFlow()
+      ]);
+
+      if (regsData.status === 'fulfilled' && Array.isArray(regsData.value)) {
+        setRegistrations(regsData.value);
+        if (user?.email) {
+          const found = regsData.value.find(
+            (r) => (r.email || '').toLowerCase() === user.email.toLowerCase()
+          );
+          if (found) {
+            setMyPass(found);
+          }
+        }
+      }
+
+      if (annsData.status === 'fulfilled' && Array.isArray(annsData.value)) {
+        setAnnouncements(annsData.value);
+      }
+
+      if (flowData.status === 'fulfilled' && Array.isArray(flowData.value) && flowData.value.length > 0) {
+        setEventStages(flowData.value);
+      }
+    } catch (err) {
+      console.warn('Sync refresh error in NonAdminPortal:', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshData();
+    const interval = setInterval(refreshData, 4000);
+    return () => clearInterval(interval);
+  }, [user?.email]);
+
+  // Sync user info into form if state updates
+  useEffect(() => {
+    if (user?.name || user?.email) {
+      setSelfForm((prev) => ({
+        ...prev,
+        fullName: prev.fullName || user.name || '',
+        email: prev.email || user.email || '',
+        organization: prev.organization || user.organization || 'Alliance University',
+        category: prev.category || user.category || 'Student'
+      }));
+    }
+  }, [user]);
+
   const handleInterestToggle = (interest) => {
     setSelfForm((prev) => {
       const exists = prev.interests.includes(interest);
@@ -110,28 +249,55 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
     });
   };
 
-  const handleSelfRegisterSubmit = (e) => {
+  const handleSelfRegisterSubmit = async (e) => {
     e.preventDefault();
     if (!selfForm.fullName || !selfForm.email) return;
 
-    showToast(`Thanks ${selfForm.fullName}! Your registration pass has been created.`);
-    setSelfForm({
-      fullName: '',
-      email: '',
-      phone: '',
-      category: 'Student',
-      organization: '',
-      designation: '',
-      department: '',
-      diet: 'No preference',
-      interests: [],
-      extra: ''
-    });
+    setIsSubmitting(true);
+    const regPayload = {
+      name: selfForm.fullName,
+      email: selfForm.email,
+      phone: selfForm.phone || '+91 90000 00000',
+      category: selfForm.category || 'Student',
+      organization: selfForm.organization || 'Alliance University',
+      designation: selfForm.designation || 'Participant',
+      department: selfForm.department || '',
+      ticketType: selfForm.category === 'Founder / Startup' ? 'VIP Pass' : 'Standard Pass',
+      status: 'Confirmed',
+      checkedIn: false
+    };
+
+    try {
+      const saved = await api.addRegistration(regPayload);
+      setMyPass(saved || regPayload);
+      showToast(`Registration confirmed! Welcome, ${selfForm.fullName}.`);
+      await refreshData();
+    } catch (err) {
+      console.error('Registration submission error:', err);
+      setMyPass(regPayload);
+      showToast(`Registration recorded! Welcome, ${selfForm.fullName}.`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  // Dynamic KPI Metrics
+  const totalRegistrations = registrations.length;
+  const totalCheckedIn = registrations.filter((r) => r.checkedIn || r.status === 'Checked In').length;
+  const totalYetToArrive = Math.max(0, totalRegistrations - totalCheckedIn);
+  const checkinRate = totalRegistrations > 0 ? Math.round((totalCheckedIn / totalRegistrations) * 100) : 0;
+  const yetToArriveRate = totalRegistrations > 0 ? Math.round((totalYetToArrive / totalRegistrations) * 100) : 0;
+
+  // Attendee Categories dynamic breakdown
+  const categoryCounts = registrations.reduce((acc, r) => {
+    const cat = r.category || 'Other';
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {});
+
   // Filtered Announcements
-  let filteredAnnouncements = ANNOUNCEMENTS.filter((a) => {
-    const matchQ = (a.title + ' ' + a.message).toLowerCase().includes(annSearch.toLowerCase());
+  let filteredAnnouncements = announcements.filter((a) => {
+    const matchQ = ((a.title || '') + ' ' + (a.message || '')).toLowerCase().includes(annSearch.toLowerCase());
     const matchCat = annCategory === 'All Categories' || a.type === annCategory;
     return matchQ && matchCat;
   });
@@ -165,6 +331,9 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
       {/* SIDEBAR */}
       <aside className="nonadmin-sidebar">
         <div className="nonadmin-brand">
+          <div className="partner-logo-badge" title="DataDice Technologies · AU-QUASAR · Alliance University">
+            <img src="/images/event_partners_banner.png" alt="DataDice · AU-QUASAR · Alliance University" />
+          </div>
           <div className="brand-title">
             IDEA → AI → <br />
             <span>IMPACT</span>
@@ -225,7 +394,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
 
       {/* MAIN CONTENT AREA */}
       <main className="nonadmin-main">
-        {/* TOPBAR WITH PROMINENT PORTAL SWITCHER */}
+        {/* TOPBAR */}
         <header className="nonadmin-topbar">
           <div className="topbar-left-meta">
             <button
@@ -250,9 +419,9 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
           </div>
 
           <div className="user-profile-badge">
-            <div className="user-avatar">{user?.avatar || 'P'}</div>
+            <div className="user-avatar">{user?.name ? user.name[0].toUpperCase() : 'P'}</div>
             <div>
-              <strong>{user?.name || 'Priya Sharma'}</strong>
+              <strong>{user?.name || 'Participant'}</strong>
               <small>{user?.role === 'staff' ? 'Event Staff' : 'Participant'}</small>
             </div>
           </div>
@@ -264,13 +433,13 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
             <div className="welcome-section">
               <div className="text-dim">Welcome back,</div>
               <h1 className="portal-heading">
-                {user?.name || 'Priya Sharma'}{' '}
+                {user?.name || 'Participant'}{' '}
                 <span className="pill pill-purple">{user?.role === 'staff' ? 'Event Staff' : 'Participant'}</span>
               </h1>
-              <p className="portal-sub">Overview of IDEA → AI → IMPACT schedule and logistics.</p>
+              <p className="portal-sub">Live overview of IDEA → AI → IMPACT schedule, registrations, and logistics.</p>
             </div>
 
-            {/* Hero Image Banner */}
+            {/* Hero Banner */}
             <div className="hero-banner">
               <div>
                 <h2>IDEA → AI → <span className="gradient-text">IMPACT</span></h2>
@@ -288,10 +457,12 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                   <div className="stat-card-icon blue"><Users size={20} /></div>
                   <div>
                     <div className="stat-card-label">Total Registrations</div>
-                    <strong>186</strong>
+                    <strong>{totalRegistrations}</strong>
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: '72%' }} /></div>
+                <div className="bar-track">
+                  <span style={{ width: totalRegistrations > 0 ? '100%' : '0%' }} />
+                </div>
               </div>
 
               <div className="stat-card">
@@ -299,11 +470,13 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                   <div className="stat-card-icon green"><CheckCircle2 size={20} /></div>
                   <div>
                     <div className="stat-card-label">Checked In</div>
-                    <strong>124</strong>
+                    <strong>{totalCheckedIn}</strong>
                   </div>
-                  <div className="stat-card-note">67%</div>
+                  <div className="stat-card-note">{checkinRate}%</div>
                 </div>
-                <div className="bar-track"><span style={{ width: '67%', background: 'var(--accent-green)' }} /></div>
+                <div className="bar-track">
+                  <span style={{ width: `${checkinRate}%`, background: 'var(--accent-green)' }} />
+                </div>
               </div>
 
               <div className="stat-card">
@@ -311,11 +484,13 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                   <div className="stat-card-icon amber"><Clock size={20} /></div>
                   <div>
                     <div className="stat-card-label">Yet to Arrive</div>
-                    <strong>62</strong>
+                    <strong>{totalYetToArrive}</strong>
                   </div>
-                  <div className="stat-card-note">33%</div>
+                  <div className="stat-card-note">{yetToArriveRate}%</div>
                 </div>
-                <div className="bar-track"><span style={{ width: '33%', background: 'var(--accent-amber)' }} /></div>
+                <div className="bar-track">
+                  <span style={{ width: `${yetToArriveRate}%`, background: 'var(--accent-amber)' }} />
+                </div>
               </div>
 
               <div className="stat-card">
@@ -326,7 +501,9 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                     <strong style={{ fontSize: '17px', marginTop: '4px' }}>10:00 – 1:00</strong>
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: '25%', background: 'var(--accent-purple)' }} /></div>
+                <div className="bar-track">
+                  <span style={{ width: '100%', background: 'var(--accent-purple)' }} />
+                </div>
               </div>
             </div>
 
@@ -335,30 +512,33 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
               <div className="card">
                 <div className="card-head">
                   <h3>Registration Momentum</h3>
-                  <span className="text-dim" style={{ fontSize: '11px' }}>15 Oct – 24 Oct</span>
+                  <span className="text-dim" style={{ fontSize: '11px' }}>Live Activity</span>
                 </div>
-                <div className="chart-wrapper">
-                  <svg viewBox="0 0 600 180" preserveAspectRatio="none">
-                    <polyline
-                      points="0,155 65,143 130,130 195,116 260,102 325,88 390,74 455,60 520,45 590,22"
-                      fill="none"
-                      stroke="#1c7fff"
-                      strokeWidth="2.5"
-                    />
-                    <polyline
-                      points="0,164 65,157 130,148 195,137 260,126 325,114 390,103 455,91 520,80 590,65"
-                      fill="none"
-                      stroke="#9646ff"
-                      strokeWidth="2.5"
-                    />
-                  </svg>
-                </div>
-                <div className="chart-timeline-labels">
-                  <span>15 Oct</span>
-                  <span>18 Oct</span>
-                  <span>21 Oct</span>
-                  <span>24 Oct</span>
-                </div>
+                {totalRegistrations === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+                    <Users size={28} style={{ opacity: 0.35, marginBottom: '6px' }} />
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>No Registrations Recorded Yet</div>
+                    <div style={{ fontSize: '12px' }}>Registered participants will populate live analytics in real time.</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="chart-wrapper">
+                      <svg viewBox="0 0 600 180" preserveAspectRatio="none">
+                        <polyline
+                          points="0,155 65,143 130,130 195,116 260,102 325,88 390,74 455,60 520,45 590,22"
+                          fill="none"
+                          stroke="#1c7fff"
+                          strokeWidth="2.5"
+                        />
+                      </svg>
+                    </div>
+                    <div className="chart-timeline-labels">
+                      <span>Inception</span>
+                      <span>Mid-Point</span>
+                      <span>Current ({totalRegistrations} Active)</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="card">
@@ -366,18 +546,27 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                   <h3>Attendee Categories</h3>
                   <span className="text-dim" style={{ fontSize: '11px' }}>Distribution</span>
                 </div>
-                <div className="donut-container">
-                  <div className="donut-chart" />
-                  <div className="donut-legend-grid">
-                    <span>🔵 Students <b>42%</b></span>
-                    <span>🟣 Founders <b>18%</b></span>
-                    <span>🩷 Working Pros <b>14%</b></span>
-                    <span>🟠 Researchers <b>10%</b></span>
-                    <span>🟢 Startups <b>8%</b></span>
-                    <span>🔹 Developers <b>6%</b></span>
-                    <span>⚪ Others <b>2%</b></span>
+                {totalRegistrations === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+                    <Tag size={28} style={{ opacity: 0.35, marginBottom: '6px' }} />
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>No Category Data Yet</div>
+                    <div style={{ fontSize: '12px' }}>Role distribution appears once attendees sign up.</div>
                   </div>
-                </div>
+                ) : (
+                  <div className="donut-container">
+                    <div className="donut-chart" />
+                    <div className="donut-legend-grid">
+                      {Object.entries(categoryCounts).map(([cat, count]) => {
+                        const pct = Math.round((count / totalRegistrations) * 100);
+                        return (
+                          <span key={cat}>
+                            ● {cat} <b>{pct}%</b> ({count})
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -391,16 +580,23 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                   </button>
                 </div>
                 <div className="list-stack">
-                  {ANNOUNCEMENTS.slice(0, 3).map((a) => (
-                    <div key={a.id} className="list-item-row">
-                      <div className="round-icon-badge">⚑</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <strong>{a.title}</strong>
-                        <p>{a.message.slice(0, 60)}...</p>
-                      </div>
-                      <time>{a.date.split(', ')[1] || '08:00 AM'}</time>
+                  {announcements.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)' }}>
+                      <Bell size={20} style={{ opacity: 0.35, marginBottom: '4px' }} />
+                      <div style={{ fontSize: '12px' }}>No live announcements posted yet.</div>
                     </div>
-                  ))}
+                  ) : (
+                    announcements.slice(0, 3).map((a) => (
+                      <div key={a.id} className="list-item-row">
+                        <div className="round-icon-badge">⚑</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <strong>{a.title}</strong>
+                          <p>{(a.message || '').slice(0, 60)}...</p>
+                        </div>
+                        <time>{(a.date || '').split(', ')[1] || 'Just now'}</time>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -439,7 +635,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                     <GitCommit size={18} className="action-tile-icon" />
                     <div>
                       <strong>View Event Flow</strong>
-                      <small>Interactive 6-step agenda →</small>
+                      <small>Official 9-stage schedule →</small>
                     </div>
                   </button>
                 </div>
@@ -452,7 +648,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                     <Calendar size={16} className="meta-icon" />
                     <div>
                       <strong>Sat, 24 Oct 2026</strong>
-                      <small>10:00 AM – 1:00 PM</small>
+                      <small>10:00 AM – 1:00 PM IST</small>
                     </div>
                   </div>
                   <div className="detail-row">
@@ -472,26 +668,58 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
           </section>
         )}
 
-        {/* ================= TAB 2: REGISTRATIONS (SELF-REGISTRATION) ================= */}
+        {/* ================= TAB 2: REGISTRATIONS ================= */}
         {activeTab === 'registrations' && (
           <section className="portal-tab-content" key="registrations">
             <div className="welcome-section" style={{ marginBottom: '16px' }}>
               <h1 className="portal-heading">Registrations</h1>
-              <p className="portal-sub">Register yourself for the event pass.</p>
+              <p className="portal-sub">Register yourself for the event pass or view your active badge credentials.</p>
             </div>
 
             <div className="layout-two-pane">
-              {/* Registration Form Card */}
+              {/* Registration Form / Status Card */}
               <div className="card">
                 <div className="card-head">
                   <div>
                     <h3>Participant Self-Registration</h3>
                     <p className="text-muted" style={{ fontSize: '12px', marginTop: '2px' }}>
-                      Please provide your accurate details to receive your event pass.
+                      Please provide your accurate details. Your registration will sync immediately to the Admin Portal.
                     </p>
                   </div>
-                  <span className="pill pill-cyan">Pass Access</span>
+                  <span className="pill pill-cyan">Live Sync</span>
                 </div>
+
+                {myPass && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(28, 127, 255, 0.12), rgba(150, 70, 255, 0.12))',
+                    border: '1px solid rgba(28, 127, 255, 0.3)',
+                    borderRadius: '10px',
+                    padding: '16px',
+                    marginBottom: '18px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent-cyan)' }}>
+                          ✓ Confirmed Event Pass
+                        </div>
+                        <h4 style={{ margin: '4px 0', fontSize: '16px', color: 'var(--text-primary)' }}>
+                          {myPass.name}
+                        </h4>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          {myPass.organization} · <span className="pill pill-purple">{myPass.category}</span>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span className={`pill ${myPass.checkedIn ? 'pill-green' : 'pill-cyan'}`}>
+                          {myPass.checkedIn ? 'Checked In' : 'Confirmed'}
+                        </span>
+                        <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '4px' }}>
+                          ID: #{myPass.id || 'SYNCED'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <form onSubmit={handleSelfRegisterSubmit} className="form-vertical" style={{ marginTop: '10px' }}>
                   <div className="form-two-col">
@@ -624,18 +852,23 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                     />
                   </div>
 
-                  <button type="submit" className="btn btn-primary btn-full" style={{ padding: '12px', marginTop: '10px' }}>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn btn-primary btn-full"
+                    style={{ padding: '12px', marginTop: '10px' }}
+                  >
                     <Check size={16} />
-                    <span>Register Myself</span>
+                    <span>{isSubmitting ? 'Registering...' : (myPass ? 'Update My Registration' : 'Register Myself')}</span>
                   </button>
 
                   <p className="text-dim" style={{ fontSize: '11px', textAlign: 'center', marginTop: '4px' }}>
-                    🔒 Privacy Assured: Self-registration data is kept strictly confidential.
+                    🔒 Live Role-Linked: Information submitted here syncs immediately to the Admin Portal.
                   </p>
                 </form>
               </div>
 
-              {/* Aside: Event Info & Guidelines */}
+              {/* Aside: Event Info & Pass Preview */}
               <div className="side-forms-pane">
                 <div className="card">
                   <h3>Event Overview</h3>
@@ -645,7 +878,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                       <div>
                         <strong>Date & Time</strong>
                         <p className="text-muted" style={{ margin: 0, fontSize: '12px' }}>
-                          Sat, 24 Oct 2026 · 10:00 AM – 1:00 PM
+                          Sat, 24 Oct 2026 · 10:00 AM – 1:00 PM IST
                         </p>
                       </div>
                     </div>
@@ -666,15 +899,15 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                   <div className="guidelines-stack" style={{ marginTop: '12px' }}>
                     <div className="guideline-row">
                       <span className="bullet green">✓</span>
-                      <span>This form is for individual self-registration.</span>
+                      <span>This form registers your official event credentials.</span>
                     </div>
                     <div className="guideline-row">
                       <span className="bullet purple">♙</span>
-                      <span>You can register only your own participant profile.</span>
+                      <span>Your badge and profile sync directly to the Admin Portal.</span>
                     </div>
                     <div className="guideline-row">
                       <span className="bullet blue">♧</span>
-                      <span>Attendee lists are restricted to administrators for privacy.</span>
+                      <span>Restricted admin controls ensure participant data privacy.</span>
                     </div>
                     <div className="guideline-row">
                       <span className="bullet amber">ℹ</span>
@@ -682,16 +915,23 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                     </div>
                     <div className="guideline-row">
                       <span className="bullet pink">✉</span>
-                      <span>You will receive an instant digital registration badge.</span>
+                      <span>Digital check-in available at the door via QR pass.</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="card" style={{ marginTop: '16px' }}>
-                  <h3>Need Assistance?</h3>
-                  <p className="text-muted" style={{ fontSize: '12px', lineHeight: '1.6' }}>
-                    For queries or technical support, visit the Help Desk in Block B foyer or speak with event organizers.
-                  </p>
+                <div className="card" style={{ marginTop: '16px', textAlign: 'center' }}>
+                  <h3>Registration QR Pass</h3>
+                  <div style={{ marginTop: '12px' }}>
+                    <img
+                      src="/images/Eventflow.png"
+                      alt="EventFlow Registration Pass QR"
+                      style={{ width: '130px', height: '130px', margin: '0 auto', display: 'block', borderRadius: '8px', background: '#fff', padding: '6px' }}
+                    />
+                    <p className="text-dim" style={{ fontSize: '11px', marginTop: '8px' }}>
+                      Present this QR pass at the entrance on event day for instant check-in.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -703,7 +943,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
           <section className="portal-tab-content" key="announcements">
             <div className="welcome-section" style={{ marginBottom: '16px' }}>
               <h1 className="portal-heading">Announcements</h1>
-              <p className="portal-sub">Live updates, logistical guidance, and schedule announcements.</p>
+              <p className="portal-sub">Live updates, logistical guidance, and schedule notices broadcast by organizers.</p>
             </div>
 
             <div className="layout-two-pane">
@@ -745,24 +985,41 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                 </div>
 
                 <div className="announcements-feed">
-                  {filteredAnnouncements.map((a) => (
-                    <div key={a.id} className="announcement-card">
-                      <div className="announcement-round-icon">⚑</div>
-                      <div className="announcement-content">
-                        <h4>
-                          {a.title}{' '}
-                          <span className={`pill ${getTagClass(a.type)}`}>
-                            {a.type}
-                          </span>
-                        </h4>
-                        <p>{a.message}</p>
-                      </div>
-                      <div className="announcement-time-box">
-                        <strong>{a.date.split(', ')[0]}</strong>
-                        <small>{a.date.split(', ')[1]}</small>
-                      </div>
+                  {filteredAnnouncements.length === 0 ? (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '50px 20px',
+                      background: 'var(--bg-card)',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-muted)'
+                    }}>
+                      <Bell size={32} style={{ opacity: 0.35, marginBottom: '10px' }} />
+                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px 0', fontSize: '15px' }}>No Announcements Found</h4>
+                      <p style={{ margin: 0, fontSize: '12.5px' }}>
+                        Announcements published from the Admin Portal will automatically broadcast here in real time.
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    filteredAnnouncements.map((a) => (
+                      <div key={a.id} className="announcement-card">
+                        <div className="announcement-round-icon">⚑</div>
+                        <div className="announcement-content">
+                          <h4>
+                            {a.title}{' '}
+                            <span className={`pill ${getTagClass(a.type)}`}>
+                              {a.type}
+                            </span>
+                          </h4>
+                          <p>{a.message}</p>
+                        </div>
+                        <div className="announcement-time-box">
+                          <strong>{(a.date || '').split(', ')[0] || 'Today'}</strong>
+                          <small>{(a.date || '').split(', ')[1] || 'Live'}</small>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -782,7 +1039,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                       <Clock size={16} className="meta-icon" />
                       <div>
                         <strong>Time</strong>
-                        <small>10:00 AM – 1:00 PM</small>
+                        <small>10:00 AM – 1:00 PM IST</small>
                       </div>
                     </div>
                     <div className="detail-row">
@@ -818,137 +1075,54 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
               <h1 className="portal-heading">
                 Event Flow <span className="pill pill-cyan">Agenda</span>
               </h1>
-              <p className="portal-sub">Chronological itinerary and activity breakdown.</p>
+              <p className="portal-sub">Chronological itinerary and schedule breakdown based on the official event program.</p>
             </div>
 
-            {/* Stepper Header */}
+            {/* Stepper Header with 9 Official Stages */}
             <div className="card" style={{ marginBottom: '18px' }}>
               <div className="flow-stepper-row">
-                <div className="flow-step">
-                  <div className="flow-step-icon green">1</div>
-                  <strong>1. Registration</strong>
-                  <small style={{ color: 'var(--accent-green)' }}>8:30 – 10:00 AM</small>
-                </div>
-                <div className="flow-step">
-                  <div className="flow-step-icon blue">2</div>
-                  <strong>2. Welcome</strong>
-                  <small>10:00 – 10:15 AM</small>
-                </div>
-                <div className="flow-step">
-                  <div className="flow-step-icon purple">3</div>
-                  <strong>3. Idea to Impact</strong>
-                  <small>10:15 – 10:45 AM</small>
-                </div>
-                <div className="flow-step">
-                  <div className="flow-step-icon pink">4</div>
-                  <strong>4. Team Formation</strong>
-                  <small>10:45 – 11:30 AM</small>
-                </div>
-                <div className="flow-step">
-                  <div className="flow-step-icon amber">5</div>
-                  <strong>5. Build & Explore</strong>
-                  <small>11:30 – 12:30 PM</small>
-                </div>
-                <div className="flow-step">
-                  <div className="flow-step-icon cyan">6</div>
-                  <strong>6. Team Pitches</strong>
-                  <small>12:30 – 1:00 PM</small>
-                </div>
+                {eventStages.map((stage) => (
+                  <div key={stage.step} className="flow-step">
+                    <div className={`flow-step-icon ${stage.color || 'blue'}`}>{stage.step}</div>
+                    <strong style={{ fontSize: '11.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                      {stage.title}
+                    </strong>
+                    <small style={{ color: 'var(--accent-cyan)', fontSize: '10px' }}>{stage.time}</small>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Detailed Timeline List */}
             <div className="layout-two-pane">
               <div className="flow-card-stack">
-                <div className="flow-card-item">
-                  <div className="flow-number-badge green">1</div>
-                  <div className="flow-card-content">
-                    <h3>Registration & Check-In</h3>
-                    <div className="text-dim" style={{ fontSize: '11.5px' }}>◷ 8:30 AM – 10:00 AM</div>
-                    <p>Participants arrive, verify credentials, and receive their smart access badge and event kit.</p>
-                    <div className="flow-activity-list">
-                      <strong>Key Activities</strong>
-                      <span>● QR code / Photo ID verification</span>
-                      <span>● Event kit & stickers distribution</span>
-                      <span>● Help desk and Wi-Fi credential support</span>
+                {eventStages.map((stage) => (
+                  <div key={stage.step} className="flow-card-item">
+                    <div className={`flow-number-badge ${stage.color || 'blue'}`}>{stage.step}</div>
+                    <div className="flow-card-content">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <h3 style={{ margin: '0 0 2px 0' }}>{stage.title}</h3>
+                          <div style={{ color: 'var(--accent-cyan)', fontSize: '12px', fontWeight: 600 }}>
+                            {stage.speaker}
+                          </div>
+                        </div>
+                        <div className="text-dim" style={{ fontSize: '11.5px', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
+                          ◷ {stage.time}
+                        </div>
+                      </div>
+                      <p style={{ marginTop: '6px' }}>{stage.desc}</p>
+                      {stage.activities && stage.activities.length > 0 && (
+                        <div className="flow-activity-list">
+                          <strong>Key Highlights</strong>
+                          {stage.activities.map((act, idx) => (
+                            <span key={idx}>● {act}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-
-                <div className="flow-card-item">
-                  <div className="flow-number-badge blue">2</div>
-                  <div className="flow-card-content">
-                    <h3>Opening & Welcome Address</h3>
-                    <div className="text-dim" style={{ fontSize: '11.5px' }}>◷ 10:00 AM – 10:15 AM</div>
-                    <p>Inauguration and welcome briefing by Alliance University leadership and the AU-QUASAR team.</p>
-                    <div className="flow-activity-list">
-                      <strong>Key Activities</strong>
-                      <span>● Welcome speech by leadership</span>
-                      <span>● Overview of event tracks & objectives</span>
-                      <span>● Introduction to mentors and speakers</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flow-card-item">
-                  <div className="flow-number-badge purple">3</div>
-                  <div className="flow-card-content">
-                    <h3>Idea to Impact: Setting the Stage</h3>
-                    <div className="text-dim" style={{ fontSize: '11.5px' }}>◷ 10:15 AM – 10:45 AM</div>
-                    <p>Keynote session on solving real problems, modern AI paradigms, and engineering for societal impact.</p>
-                    <div className="flow-activity-list">
-                      <strong>Key Activities</strong>
-                      <span>● Keynote presentation</span>
-                      <span>● Real-world case study breakdowns</span>
-                      <span>● Interactive Q&A session</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flow-card-item">
-                  <div className="flow-number-badge pink">4</div>
-                  <div className="flow-card-content">
-                    <h3>Team Formation & Problem Statements</h3>
-                    <div className="text-dim" style={{ fontSize: '11.5px' }}>◷ 10:45 AM – 11:30 AM</div>
-                    <p>Participants connect across domains, pitch rough concepts, form teams, and choose challenge briefs.</p>
-                    <div className="flow-activity-list">
-                      <strong>Key Activities</strong>
-                      <span>● Cross-team matchmaking</span>
-                      <span>● Problem statement briefing</span>
-                      <span>● Mentor interaction and alignment</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flow-card-item">
-                  <div className="flow-number-badge amber">5</div>
-                  <div className="flow-card-content">
-                    <h3>Build, Explore & Mentor Sessions</h3>
-                    <div className="text-dim" style={{ fontSize: '11.5px' }}>◷ 11:30 AM – 12:30 PM</div>
-                    <p>Teams build out prototypes with continuous feedback and technical guidance from industry mentors.</p>
-                    <div className="flow-activity-list">
-                      <strong>Key Activities</strong>
-                      <span>● Hands-on coding and lab sprint</span>
-                      <span>● Mentor support and architecture review</span>
-                      <span>● Prototype demo preparations</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flow-card-item">
-                  <div className="flow-number-badge cyan">6</div>
-                  <div className="flow-card-content">
-                    <h3>Team Pitches & Closing</h3>
-                    <div className="text-dim" style={{ fontSize: '11.5px' }}>◷ 12:30 PM – 1:00 PM</div>
-                    <p>Teams present live prototypes, followed by juror awards, accelerator entries, and closing remarks.</p>
-                    <div className="flow-activity-list">
-                      <strong>Key Activities</strong>
-                      <span>● 3-minute team presentations</span>
-                      <span>● Mentor & jury feedback</span>
-                      <span>● Certificate distribution & networking lunch</span>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Aside: Important Notes & Resources */}
@@ -960,7 +1134,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                       <Calendar size={16} className="meta-icon" />
                       <div>
                         <strong>Sat, 24 Oct 2026</strong>
-                        <small>10:00 AM – 1:00 PM</small>
+                        <small>10:00 AM – 1:00 PM IST</small>
                       </div>
                     </div>
                     <div className="detail-row">
@@ -978,43 +1152,45 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                   <div className="guidelines-stack" style={{ marginTop: '12px' }}>
                     <div className="guideline-row">
                       <span className="bullet green">•</span>
-                      <span>Please arrive at least 15 minutes before opening.</span>
+                      <span>Please arrive by 9:45 AM before opening address.</span>
                     </div>
                     <div className="guideline-row">
                       <span className="bullet purple">•</span>
-                      <span>Carry a valid ID card for check-in verification.</span>
+                      <span>Carry your student ID / government ID for verification.</span>
                     </div>
                     <div className="guideline-row">
                       <span className="bullet blue">•</span>
-                      <span>Follow the event schedule and be on time.</span>
+                      <span>Teams will be divided across three rooms in Round 1.</span>
                     </div>
                     <div className="guideline-row">
                       <span className="bullet amber">•</span>
-                      <span>Complimentary lunch and refreshments are provided.</span>
+                      <span>Snacks and artisan refreshments served at 11:00 AM.</span>
                     </div>
                     <div className="guideline-row">
                       <span className="bullet pink">•</span>
-                      <span>Visit the help desk in Block B for assistance.</span>
+                      <span>Final round presentations will be evaluated by jury.</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="card" style={{ marginTop: '16px' }}>
-                  <h3>Event Resources</h3>
-                  <div className="resource-list" style={{ marginTop: '10px' }}>
-                    <a href="#pdf" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Downloading Schedule PDF...'); }}>
+                  <h3>Event Partners</h3>
+                  <div style={{ marginTop: '12px', background: '#ffffff', borderRadius: '8px', padding: '10px' }}>
+                    <img
+                      src="/images/event_partners_banner.png"
+                      alt="DataDice Technologies · AU-QUASAR · Alliance University"
+                      style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
+                    />
+                  </div>
+                  <div className="resource-list" style={{ marginTop: '14px' }}>
+                    <a href="#pdf" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Downloading Official Event Schedule PDF...'); }}>
                       <FileText size={15} />
                       <span>Event Schedule (PDF)</span>
                       <Download size={13} className="download-ico" />
                     </a>
-                    <a href="#map" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Opening Campus Map...'); }}>
+                    <a href="#map" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Opening Campus & Innovation Center Map...'); }}>
                       <MapPin size={15} />
                       <span>Campus & Venue Map</span>
-                      <Download size={13} className="download-ico" />
-                    </a>
-                    <a href="#code" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Opening Code of Conduct...'); }}>
-                      <FileText size={15} />
-                      <span>Code of Conduct</span>
                       <Download size={13} className="download-ico" />
                     </a>
                   </div>

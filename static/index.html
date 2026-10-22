@@ -1154,6 +1154,171 @@
       50% { transform: translateY(4px); }
     }
 
+    /* Event Schedule Section Matching Attached Flyer */
+    .schedule-section {
+      padding-block: 76px 84px;
+      border-top: 1px solid var(--event-line);
+    }
+
+    .schedule-flyer-wrap {
+      max-width: 680px;
+      margin: 36px auto 0;
+      background: #091224;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 30px 26px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .flyer-header-banner {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .flyer-header-banner img {
+      max-width: 100%;
+      height: 48px;
+      object-fit: contain;
+    }
+
+    .flyer-meta-sub {
+      color: #798aa8;
+      font-size: 13.5px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .flyer-main-title {
+      font-family: var(--font-display);
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      color: #ffffff;
+    }
+
+    .flyer-main-title .impact-gold {
+      color: #e59934;
+      display: block;
+    }
+
+    .flyer-tagline {
+      color: #27a3f3;
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .flyer-time-box {
+      background: #111d38;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .flyer-time-box .time-date {
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .flyer-time-box .time-hours {
+      color: #e59934;
+      font-weight: 700;
+      font-size: 15px;
+      margin-top: 2px;
+    }
+
+    .flyer-venue-text {
+      color: #92a4c5;
+      font-size: 13.5px;
+      margin-bottom: 26px;
+    }
+
+    .flyer-schedule-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 16px;
+    }
+
+    .flyer-schedule-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .flyer-stage-card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: #0c162c;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .flyer-stage-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .stage-time-pill {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 11.5px;
+      min-width: 130px;
+      text-align: center;
+    }
+
+    .stage-time-pill.teal { background: #007a87; }
+    .stage-time-pill.purple { background: #5e3b88; }
+    .stage-time-pill.blue { background: #1b5a9e; }
+    .stage-time-pill.amber { background: #9e5917; }
+
+    .stage-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stage-info strong {
+      display: block;
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #0d172e;
+      line-height: 1.25;
+    }
+
+    .stage-info span {
+      display: block;
+      font-size: 12px;
+      color: #55657e;
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    .flyer-footer-note {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: #637593;
+      font-size: 11.5px;
+    }
+
     /* Responsive Breakpoints */
     @media (min-width: 1500px) {
       .hero { min-height: 740px; }
@@ -1274,17 +1439,23 @@
 
     <!-- Header -->
     <header class="site-header">
-      <a aria-label="EventFlow, back to top" class="wordmark" href="#top">
-        <span class="wordmark-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
-            <path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>
-          </svg>
-        </span>
-        <span>EventFlow</span>
-      </a>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <a aria-label="EventFlow, back to top" class="wordmark" href="#top">
+          <span class="wordmark-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+              <path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>
+            </svg>
+          </span>
+          <span>EventFlow</span>
+        </a>
+        <div class="header-partner-badge" style="display: flex; align-items: center; border-left: 1px solid var(--event-line); padding-left: 12px;">
+          <img src="images/event_partners_banner.png" alt="DataDice · AU-QUASAR · Alliance University" style="height: 26px; width: auto; background: #ffffff; border-radius: 4px; padding: 2px 6px; display: block;" />
+        </div>
+      </div>
       <nav aria-label="Main navigation" class="site-nav">
         <a href="#lab">The lab</a>
+        <a href="#schedule">Event schedule</a>
         <a href="#explore">What you’ll explore</a>
         <a href="#details">Event details</a>
         <a href="http://localhost:5173/?mode=login" class="nav-login-link">Sign In</a>
@@ -1300,7 +1471,7 @@
     <!-- Hero Section -->
     <section aria-labelledby="hero-heading" class="hero section-wrap">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="live-dot"></span> AU-QUASAR · BANGALORE</div>
+        <div class="eyebrow"><span class="live-dot"></span> DATADICE × AU-QUASAR · ALLIANCE UNIVERSITY</div>
         <h1 id="hero-heading">
           <span>IDEA</span>
           <span class="hero-transition">
@@ -1461,11 +1632,123 @@
       </div>
     </section>
 
+    <!-- Event Schedule Section Matching Attached Flyer -->
+    <section aria-labelledby="schedule-heading" class="schedule-section section-wrap" id="schedule">
+      <div class="section-kicker" data-reveal>
+        <span>02 / EVENT SCHEDULE</span>
+        <span>SATURDAY, 24 OCTOBER 2026 · 10:00 AM – 1:00 PM IST</span>
+      </div>
+
+      <div class="schedule-flyer-wrap" data-reveal>
+        <!-- Partner Logo Banner from Image -->
+        <div class="flyer-header-banner">
+          <img src="images/event_partners_banner.png" alt="DataDice Technologies · AU-QUASAR · Alliance University" />
+        </div>
+
+        <div class="flyer-meta-sub">DataDice with AU-TBI, Alliance University</div>
+        <div class="flyer-main-title">
+          IDEA &gt; AI &gt;
+          <span class="impact-gold">IMPACT</span>
+        </div>
+        <div class="flyer-tagline">Deep-Tech Innovation Lab</div>
+
+        <div class="flyer-time-box">
+          <div class="time-date">Saturday, 24 October 2026</div>
+          <div class="time-hours">10:00 AM - 1:00 PM IST</div>
+        </div>
+
+        <div class="flyer-venue-text">
+          📍 AU-QUASAR, Alliance University, Bengaluru
+        </div>
+
+        <h3 class="flyer-schedule-title" id="schedule-heading">Event schedule</h3>
+
+        <div class="flyer-schedule-list">
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill teal">10:00–10:15 AM</div>
+            <div class="stage-info">
+              <strong>Welcome Address</strong>
+              <span>AU-QUASAR Management</span>
+            </div>
+          </div>
+
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill purple">10:15–10:30 AM</div>
+            <div class="stage-info">
+              <strong>Chief Guest Address</strong>
+              <span>Shri. Mahadesha V · Director, STPI - Bengaluru</span>
+            </div>
+          </div>
+
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill blue">10:30–10:45 AM</div>
+            <div class="stage-info">
+              <strong>Dr. Kadiyali Srivatsa</strong>
+              <span>Session topic to be announced</span>
+            </div>
+          </div>
+
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill teal">10:45–11:00 AM</div>
+            <div class="stage-info">
+              <strong>DataDice &amp; CommunIDy™</strong>
+              <span>Bhanu Surya on the company and the CommunIDy™ product</span>
+            </div>
+          </div>
+
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill amber">11:00–11:15 AM</div>
+            <div class="stage-info">
+              <strong>Snacks Break</strong>
+              <span>Networking &amp; refreshments at the Innovation Courtyard</span>
+            </div>
+          </div>
+
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill purple">11:15 AM–12:00 PM</div>
+            <div class="stage-info">
+              <strong>Round 1 - Three Rooms</strong>
+              <span>Students, startups and enthusiasts compete in three different rooms</span>
+            </div>
+          </div>
+
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill blue">12:00–12:40 PM</div>
+            <div class="stage-info">
+              <strong>Final Round</strong>
+              <span>Top two from each room - six finalists</span>
+            </div>
+          </div>
+
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill teal">12:40–12:50 PM</div>
+            <div class="stage-info">
+              <strong>Jury Deliberation</strong>
+              <span>The jury panel decides the winners</span>
+            </div>
+          </div>
+
+          <div class="flyer-stage-card">
+            <div class="stage-time-pill amber">12:50–1:00 PM</div>
+            <div class="stage-info">
+              <strong>Winners &amp; Closing</strong>
+              <span>Winners announced, event closes</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flyer-footer-note">
+          <span>All times are IST.</span>
+          <span>Final schedule · 22 October 2026 · Instinct</span>
+        </div>
+      </div>
+    </section>
+
     <!-- What You'll Explore Section -->
     <section aria-labelledby="explore-heading" class="explore-section" id="explore">
       <div class="section-wrap explore-inner">
         <div class="section-kicker" data-reveal>
-          <span>02 / WHAT YOU’LL EXPLORE</span>
+          <span>03 / WHAT YOU’LL EXPLORE</span>
           <span>FRONTIERS TO BUILD ON</span>
         </div>
         <div class="explore-intro" data-reveal>
@@ -1548,7 +1831,7 @@
     <section aria-labelledby="people-heading" class="people-section section-wrap" id="people">
       <div class="people-layout">
         <div class="people-copy" data-reveal>
-          <div class="section-kicker"><span>03 / YOUR PEOPLE</span></div>
+          <div class="section-kicker"><span>04 / YOUR PEOPLE</span></div>
           <h2 id="people-heading">Good ideas<br />find <span class="text-pink">their people.</span></h2>
           <p>Bring your curiosity, your perspective, and the problem you can’t stop thinking about.</p>
         </div>
@@ -1568,7 +1851,7 @@
     <section aria-labelledby="details-heading" class="details-section" id="details">
       <div class="section-wrap details-inner">
         <div class="section-kicker" data-reveal>
-          <span>04 / MAKE IT REAL</span>
+          <span>05 / MAKE IT REAL</span>
           <span>SAVE YOUR SATURDAY</span>
         </div>
         <div class="details-layout">
@@ -1638,8 +1921,8 @@
           </aside>
         </div>
         <div class="organisers" data-reveal>
-          <span class="organisers-label">AT AU-QUASAR · ALLIANCE UNIVERSITY</span>
-          <img alt="AU-QUASAR and Alliance University" loading="lazy" src="images/venue-marks.jpg" />
+          <span class="organisers-label">AU-QUASAR · ALLIANCE UNIVERSITY · DATADICE</span>
+          <img alt="DataDice Technologies, AU-QUASAR and Alliance University" loading="lazy" src="images/event_partners_banner.png" />
         </div>
       </div>
     </section>
@@ -1649,8 +1932,8 @@
       <a class="footer-brand" href="#top">IDEA <span>→</span> AI <span>→</span> IMPACT</a>
       <p>A half-day deep-tech innovation lab · Bangalore</p>
       <div class="footer-partner">
-        <span>SUPPORTED BY</span>
-        <img alt="DataDice Technologies" loading="lazy" src="images/dataslice-mark.jpg" />
+        <span>POWERED BY</span>
+        <img alt="DataDice Technologies" loading="lazy" src="images/datadice-logo.png" />
       </div>
       <a aria-label="Back to the top" class="back-to-top" href="#top">
         BACK TO TOP

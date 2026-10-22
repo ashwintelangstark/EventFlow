@@ -77,6 +77,14 @@ export const api = {
     return res.json();
   },
 
+  async deleteRegistration(id) {
+    const res = await fetch(`${API_BASE}/registrations/${id}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete registration');
+    return res.json();
+  },
+
   // Announcements
   async getAnnouncements(params = {}) {
     const qs = new URLSearchParams(params).toString();

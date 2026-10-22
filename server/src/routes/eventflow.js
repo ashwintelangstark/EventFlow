@@ -44,6 +44,72 @@ const STATIC_METADATA = {
   ]
 };
 
+const DEFAULT_STAGES = [
+  {
+    stage: 1,
+    title: "Welcome Address",
+    time: "10:00–10:15 AM",
+    description: "AU-QUASAR Management",
+    activities: ["Welcome Address by AU-QUASAR Management", "Opening remarks & event introduction"]
+  },
+  {
+    stage: 2,
+    title: "Chief Guest Address",
+    time: "10:15–10:30 AM",
+    description: "Shri. Mahadesha V, Director, STPI - Bengaluru",
+    activities: ["Address by Chief Guest Shri. Mahadesha V", "STPI Bengaluru perspectives & industry insights"]
+  },
+  {
+    stage: 3,
+    title: "Dr. Kadiyali Srivatsa",
+    time: "10:30–10:45 AM",
+    description: "Session topic to be announced",
+    activities: ["Expert address & deep-tech session", "Interactive audience Q&A"]
+  },
+  {
+    stage: 4,
+    title: "DataDice & CommunIDy™",
+    time: "10:45–11:00 AM",
+    description: "Bhanu Surya on the company and the CommunIDy™ product",
+    activities: ["Company address by Bhanu Surya", "CommunIDy™ platform overview & demo"]
+  },
+  {
+    stage: 5,
+    title: "Snacks Break",
+    time: "11:00–11:15 AM",
+    description: "Networking & refreshments",
+    activities: ["Networking & refreshments break", "Room transition & assignment"]
+  },
+  {
+    stage: 6,
+    title: "Round 1 - Three Rooms",
+    time: "11:15 AM–12:00 PM",
+    description: "Students, startups and enthusiasts compete in three different rooms",
+    activities: ["Breakout pitch tracks across Room 1, 2, and 3", "Mentorship review & evaluations"]
+  },
+  {
+    stage: 7,
+    title: "Final Round",
+    time: "12:00–12:40 PM",
+    description: "Top two from each room - six finalists",
+    activities: ["Presentations by 6 top finalist teams", "Final evaluation by grand jury"]
+  },
+  {
+    stage: 8,
+    title: "Jury Deliberation",
+    time: "12:40–12:50 PM",
+    description: "The jury panel decides the winners",
+    activities: ["Jury scoring collation & debate", "Final selection of award winners"]
+  },
+  {
+    stage: 9,
+    title: "Winners & Closing",
+    time: "12:50–1:00 PM",
+    description: "Winners announced, event closes",
+    activities: ["Award ceremony & felicitations", "Closing remarks & event wrap-up"]
+  }
+];
+
 // GET /api/eventflow
 router.get('/', async (req, res) => {
   if (isSupabaseConfigured && supabaseAdmin) {
@@ -55,16 +121,21 @@ router.get('/', async (req, res) => {
 
       if (error) throw error;
 
-      return res.json({
-        ...STATIC_METADATA,
-        stages: data.map(formatSession)
-      });
+      if (data && data.length > 0) {
+        return res.json({
+          ...STATIC_METADATA,
+          stages: data.map(formatSession)
+        });
+      }
     } catch (err) {
       console.error('Event sessions fetch error:', err);
     }
   }
 
-  res.status(503).json({ error: 'Database service unavailable' });
+  return res.json({
+    ...STATIC_METADATA,
+    stages: DEFAULT_STAGES
+  });
 });
 
 // POST /api/eventflow (Admin only)

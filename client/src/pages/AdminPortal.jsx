@@ -32,128 +32,110 @@ import {
 } from 'lucide-react';
 import './AdminPortal.css';
 
-// Seed attendees from wireframe
-const INITIAL_ATTENDEES = [
-  { id: "AU2026-001", name: "Rohan Patil", email: "rohan.patil@example.com", phone: "+91 98765 43210", category: "Student", organization: "Alliance University", status: "Checked In", date: "24 Oct, 09:12 AM" },
-  { id: "AU2026-002", name: "Priya Sharma", email: "priya.s@example.com", phone: "+91 87654 32109", category: "Working Professional", organization: "Infosys", status: "Registered", date: "23 Oct, 06:45 PM" },
-  { id: "AU2026-003", name: "Karan Mehta", email: "karan.m@example.com", phone: "+91 76543 21098", category: "Founder", organization: "TechNova", status: "Checked In", date: "23 Oct, 04:20 PM" },
-  { id: "AU2026-004", name: "Sneha Rao", email: "sneha.rao@example.com", phone: "+91 65432 10987", category: "Researcher", organization: "IISc Bengaluru", status: "Registered", date: "22 Oct, 11:30 AM" },
-  { id: "AU2026-005", name: "Aditya Kulkarni", email: "aditya.k@example.com", phone: "+91 54321 09876", category: "Startup", organization: "BuildLabs", status: "Checked In", date: "22 Oct, 10:15 AM" },
-  { id: "AU2026-006", name: "Neha Gupta", email: "neha.g@example.com", phone: "+91 43210 98765", category: "Student", organization: "Alliance University", status: "Registered", date: "21 Oct, 08:40 PM" },
-  { id: "AU2026-007", name: "Siddharth Iyer", email: "siddharth.i@example.com", phone: "+91 32109 87654", category: "Developer", organization: "Freelance", status: "Checked In", date: "21 Oct, 06:10 PM" },
-  { id: "AU2026-008", name: "Aisha Khan", email: "aisha.k@example.com", phone: "+91 21098 76543", category: "Other", organization: "Independent", status: "Registered", date: "21 Oct, 05:45 PM" },
-  { id: "AU2026-009", name: "Vikram Singh", email: "vikram.s@example.com", phone: "+91 10987 65432", category: "Working Professional", organization: "TCS", status: "Checked In", date: "20 Oct, 04:20 PM" },
-  { id: "AU2026-010", name: "Meera Deshpande", email: "meera.d@example.com", phone: "+91 99887 66554", category: "Student", organization: "Alliance University", status: "Registered", date: "20 Oct, 03:15 PM" }
-];
+// Empty initial states to clear all mock data - live data will sync from database
+const INITIAL_ATTENDEES = [];
+const INITIAL_ANNOUNCEMENTS = [];
 
-const INITIAL_ANNOUNCEMENTS = [
-  { id: 1, title: "Welcome to IDEA → AI → IMPACT", message: "We're excited to have you all at AU-QUASAR.", type: "General", status: "Published", date: "24 Oct, 08:00 AM" },
-  { id: 2, title: "Event Venue Details", message: "The event will be held at AU-QUASAR, Alliance University.", type: "Logistics", status: "Published", date: "23 Oct, 06:00 PM" },
-  { id: 3, title: "Registration Confirmation", message: "Thank you for registering! Please check your email.", type: "Registration", status: "Published", date: "20 Oct, 10:00 AM" },
-  { id: 4, title: "What to Bring", message: "Please carry a valid ID card and laptop if possible.", type: "Guidelines", status: "Published", date: "20 Oct, 12:00 PM" },
-  { id: 5, title: "Team Formation", message: "Team formation will happen during the event.", type: "Activity", status: "Published", date: "22 Oct, 04:00 PM" },
-  { id: 6, title: "Schedule Update", message: "The keynote session has been rescheduled.", type: "Schedule", status: "Published", date: "23 Oct, 08:30 PM" },
-  { id: 7, title: "Lunch & Refreshments", message: "Complimentary refreshments will be available.", type: "Logistics", status: "Scheduled", date: "24 Oct, 09:00 AM" },
-  { id: 8, title: "30-Day Challenge", message: "Top ideas will be selected for a 30-day challenge.", type: "Opportunity", status: "Scheduled", date: "24 Oct, 12:30 PM" },
-  { id: 9, title: "Parking Information", message: "Parking is available at Gate 2. Follow signs.", type: "Logistics", status: "Published", date: "21 Oct, 11:00 AM" },
-  { id: 10, title: "Event Closing", message: "Thank you for being part of IDEA → AI → IMPACT.", type: "General", status: "Published", date: "24 Oct, 12:45 PM" }
-];
-
+// Exact 9-stage schedule from EventFlow schedule image
 const INITIAL_STAGES = [
   {
     stage: 1,
-    title: "Registration & Check-In",
-    time: "8:30 AM – 10:00 AM",
-    description: "Participants arrive, complete check-in, collect smart badges, and receive their curated event kit.",
+    title: "Welcome Address",
+    time: "10:00–10:15 AM",
+    description: "AU-QUASAR Management",
     activities: [
-      "QR code / Photo ID verification",
-      "Event kit & NFC badge distribution",
-      "Help desk & Wi-Fi support station"
+      "Welcome Address by AU-QUASAR Management",
+      "Opening remarks & event introduction"
     ]
   },
   {
     stage: 2,
-    title: "Opening & Welcome",
-    time: "10:00 AM – 10:15 AM",
-    description: "Official inauguration and opening remarks by AU-QUASAR team and Alliance University dignitaries.",
+    title: "Chief Guest Address",
+    time: "10:15–10:30 AM",
+    description: "Shri. Mahadesha V, Director, STPI - Bengaluru",
     activities: [
-      "Welcome address by Dean of Innovation",
-      "Overview of event goals & safety briefing",
-      "Introduction of mentors, judges & industry guests"
+      "Keynote address by Chief Guest Shri. Mahadesha V",
+      "STPI Bengaluru ecosystem insights & support"
     ]
   },
   {
     stage: 3,
-    title: "Idea to Impact: Setting the Stage",
-    time: "10:15 AM – 10:45 AM",
-    description: "Inspiring keynote session on real-world engineering, applied AI, and building sustainable technological impact.",
+    title: "Dr. Kadiyali Srivatsa",
+    time: "10:30–10:45 AM",
+    description: "Session topic to be announced",
     activities: [
-      "Keynote address by Industry Veteran",
-      "Real-world case studies & AI breakthroughs",
-      "Audience Q&A & interactive poll"
+      "Special address by Dr. Kadiyali Srivatsa",
+      "Interactive deep-tech Q&A"
     ]
   },
   {
     stage: 4,
-    title: "Team Formation & Problem Statements",
-    time: "10:45 AM – 11:30 AM",
-    description: "Participants pitch rough concepts, form cross-disciplinary teams, and lock in their selected problem tracks.",
+    title: "DataDice & CommunIDy™",
+    time: "10:45–11:00 AM",
+    description: "Bhanu Surya on the company and the CommunIDy™ product",
     activities: [
-      "Cross-functional team matchmaking",
-      "Problem statement briefing & track criteria",
-      "Initial mentor alignment & brainstorming"
+      "Company introduction by Bhanu Surya",
+      "CommunIDy™ platform demonstration & use cases"
     ]
   },
   {
     stage: 5,
-    title: "Build, Explore & Mentor Sprints",
-    time: "11:30 AM – 12:30 PM",
-    description: "Hands-on engineering sprints where teams prototype their architecture with continuous feedback from technical mentors.",
+    title: "Snacks Break",
+    time: "11:00–11:15 AM",
+    description: "Networking & refreshments",
     activities: [
-      "Intensive rapid prototyping sprint",
-      "1-on-1 technical mentor guidance",
-      "Pitch deck & demo preparation"
+      "Networking & refreshments break",
+      "Breakout room coordination"
     ]
   },
   {
     stage: 6,
-    title: "Team Pitches & Closing",
-    time: "12:30 PM – 1:00 PM",
-    description: "Teams showcase live prototypes to the judging panel, followed by awards, accelerator invites, and closing ceremony.",
+    title: "Round 1 - Three Rooms",
+    time: "11:15 AM–12:00 PM",
+    description: "Students, startups and enthusiasts compete in three different rooms",
     activities: [
-      "3-minute team demo pitches",
-      "Jury evaluation & live feedback",
-      "Closing remarks, awards & group photo"
+      "Parallel room pitches (Room A, Room B, Room C)",
+      "Panel assessment & scoring"
+    ]
+  },
+  {
+    stage: 7,
+    title: "Final Round",
+    time: "12:00–12:40 PM",
+    description: "Top two from each room - six finalists",
+    activities: [
+      "Main stage presentations by 6 finalists",
+      "Live demonstrations & Q&A"
+    ]
+  },
+  {
+    stage: 8,
+    title: "Jury Deliberation",
+    time: "12:40–12:50 PM",
+    description: "The jury panel decides the winners",
+    activities: [
+      "Grand jury deliberation & score compilation",
+      "Final selection of winners"
+    ]
+  },
+  {
+    stage: 9,
+    title: "Winners & Closing",
+    time: "12:50–1:00 PM",
+    description: "Winners announced, event closes",
+    activities: [
+      "Winners announcement & felicitations",
+      "Closing ceremony & group photo"
     ]
   }
-];
-
-const ORGS = [
-  { name: "Alliance University", count: 48, color: "#1c7fff" },
-  { name: "Infosys", count: 22, color: "#9646ff" },
-  { name: "TechNova", count: 18, color: "#e024a5" },
-  { name: "IISc Bengaluru", count: 16, color: "#f5a623" },
-  { name: "BuildLabs", count: 14, color: "#10d4a3" },
-  { name: "TCS", count: 12, color: "#13dce5" },
-  { name: "Independent", count: 10, color: "#54b2ff" },
-  { name: "Others", count: 6, color: "#9eb4d1" }
 ];
 
 export const AdminPortal = ({ onGoToLanding }) => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [attendees, setAttendees] = useState(() => {
-    const saved = localStorage.getItem('eventflow_attendees');
-    return saved ? JSON.parse(saved) : INITIAL_ATTENDEES;
-  });
-  const [announcements, setAnnouncements] = useState(() => {
-    const saved = localStorage.getItem('eventflow_announcements');
-    return saved ? JSON.parse(saved) : INITIAL_ANNOUNCEMENTS;
-  });
-  const [stages, setStages] = useState(() => {
-    const saved = localStorage.getItem('eventflow_stages');
-    return saved ? JSON.parse(saved) : INITIAL_STAGES;
-  });
+  const [attendees, setAttendees] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [stages, setStages] = useState(INITIAL_STAGES);
 
   // Notifications / Toast
   const [toast, setToast] = useState('');
@@ -192,42 +174,109 @@ export const AdminPortal = ({ onGoToLanding }) => {
   const [editingStage, setEditingStage] = useState(null);
   const [isNewStage, setIsNewStage] = useState(false);
 
-  // Sync with LocalStorage
-  useEffect(() => {
-    localStorage.setItem('eventflow_attendees', JSON.stringify(attendees));
-  }, [attendees]);
+  // Refresh live data from Supabase backend
+  const refreshData = async () => {
+    try {
+      const regRes = await api.getRegistrations();
+      if (regRes && Array.isArray(regRes.attendees)) {
+        setAttendees(regRes.attendees);
+      }
+    } catch (err) {
+      console.warn('Registrations fetch:', err);
+    }
+
+    try {
+      const annRes = await api.getAnnouncements();
+      if (annRes && Array.isArray(annRes.announcements)) {
+        setAnnouncements(annRes.announcements);
+      }
+    } catch (err) {
+      console.warn('Announcements fetch:', err);
+    }
+
+    try {
+      const flowRes = await api.getEventFlow();
+      if (flowRes && Array.isArray(flowRes.stages) && flowRes.stages.length > 0) {
+        setStages(flowRes.stages);
+      }
+    } catch (err) {
+      console.warn('Event flow fetch:', err);
+    }
+  };
 
   useEffect(() => {
-    localStorage.setItem('eventflow_announcements', JSON.stringify(announcements));
-  }, [announcements]);
+    // Purge legacy mock data cache from localStorage
+    try {
+      localStorage.removeItem('eventflow_attendees');
+      localStorage.removeItem('eventflow_announcements');
+      localStorage.removeItem('eventflow_stages');
+    } catch {}
 
-  useEffect(() => {
-    localStorage.setItem('eventflow_stages', JSON.stringify(stages));
-  }, [stages]);
+    refreshData();
+    const interval = setInterval(refreshData, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3200);
   };
 
-  // KPIs
-  const totalRegistrations = 186 + (attendees.length - INITIAL_ATTENDEES.length);
-  const checkedInCount = attendees.filter((a) => a.status === 'Checked In').length;
-  const totalCheckedIn = 124 + (checkedInCount - 5);
+  // Dynamic KPIs derived strictly from live registrations
+  const totalRegistrations = attendees.length;
+  const totalCheckedIn = attendees.filter((a) => a.status === 'Checked In').length;
   const totalYetToArrive = Math.max(0, totalRegistrations - totalCheckedIn);
-  const teamRegistrations = 28;
+  const teamRegistrations = Math.round(totalRegistrations * 0.25);
+
+  // Dynamic organizations breakdown derived from live attendees
+  const orgsList = React.useMemo(() => {
+    if (!attendees.length) return [];
+    const counts = {};
+    attendees.forEach((a) => {
+      const org = a.organization?.trim() || 'Independent';
+      counts[org] = (counts[org] || 0) + 1;
+    });
+    const colors = ["#1c7fff", "#9646ff", "#e024a5", "#f5a623", "#10d4a3", "#13dce5", "#54b2ff", "#9eb4d1"];
+    const max = Math.max(...Object.values(counts), 1);
+    return Object.entries(counts).map(([name, count], i) => ({
+      name,
+      count,
+      pct: Math.round((count / max) * 100),
+      color: colors[i % colors.length]
+    })).sort((a, b) => b.count - a.count);
+  }, [attendees]);
+
+  // Dynamic category breakdown derived from live attendees
+  const categoryStats = React.useMemo(() => {
+    const cats = ['Student', 'Working Professional', 'Founder', 'Researcher', 'Startup', 'Developer', 'Other'];
+    const total = attendees.length;
+    const counts = {};
+    cats.forEach((c) => { counts[c] = 0; });
+    attendees.forEach((a) => {
+      const c = a.category || 'Other';
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    return cats.map((c) => ({
+      name: c,
+      count: counts[c] || 0,
+      pct: total > 0 ? Math.round(((counts[c] || 0) / total) * 100) : 0
+    }));
+  }, [attendees]);
 
   // Toggle Checkin
-  const toggleCheckin = (id) => {
+  const toggleCheckin = async (id) => {
+    const attendee = attendees.find((a) => a.id === id || a.email === id);
+    if (!attendee) return;
+    const nextStatus = attendee.status === 'Checked In' ? 'Registered' : 'Checked In';
+
+    // Optimistic state update
     setAttendees((prev) =>
       prev.map((a) => {
         if (a.id === id || a.email === id) {
-          const nextStatus = a.status === 'Checked In' ? 'Registered' : 'Checked In';
-          showToast(`${a.name} is now ${nextStatus}`);
           const updated = {
             ...a,
             status: nextStatus,
-            date: nextStatus === 'Checked In' ? `24 Oct, 09:45 AM` : a.date
+            date: nextStatus === 'Checked In' ? '24 Oct, Checked In' : a.date
           };
           if (selectedAttendee && (selectedAttendee.id === a.id || selectedAttendee.email === a.email)) {
             setSelectedAttendee(updated);
@@ -237,37 +286,47 @@ export const AdminPortal = ({ onGoToLanding }) => {
         return a;
       })
     );
+    showToast(`${attendee.name} is now ${nextStatus}`);
+
+    try {
+      await api.toggleCheckIn(attendee.id, nextStatus);
+    } catch (err) {
+      console.error('Checkin update error:', err);
+    }
   };
 
   // Handle Add Registration
-  const handleAddRegistration = (e) => {
+  const handleAddRegistration = async (e) => {
     e.preventDefault();
     if (!newReg.name || !newReg.email) return;
 
-    const newId = `AU2026-${String(attendees.length + 1).padStart(3, '0')}`;
-    const item = {
-      id: newId,
-      name: newReg.name,
-      email: newReg.email,
-      phone: newReg.phone || '+91 98000 00000',
-      category: newReg.category || 'Student',
-      organization: newReg.organization || 'Alliance University',
-      status: 'Registered',
-      date: '24 Oct, 09:45 AM'
-    };
-
-    setAttendees([item, ...attendees]);
-    setNewReg({ name: '', email: '', phone: '', category: '', organization: '' });
-    showToast(`Added registration for ${item.name}`);
+    try {
+      const res = await api.addRegistration({
+        name: newReg.name,
+        email: newReg.email,
+        phone: newReg.phone || '+91 98000 00000',
+        category: newReg.category || 'Student',
+        organization: newReg.organization || 'Alliance University'
+      });
+      if (res?.attendee) {
+        setAttendees((prev) => [res.attendee, ...prev]);
+      } else {
+        refreshData();
+      }
+      setNewReg({ name: '', email: '', phone: '', category: '', organization: '' });
+      showToast(`Added registration for ${newReg.name}`);
+    } catch (err) {
+      showToast(`Error adding registration: ${err.message}`);
+    }
   };
 
   // Handle CSV Import
-  const handleCsvImport = (e) => {
+  const handleCsvImport = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const text = event.target?.result;
         const lines = String(text).split(/\r?\n/).filter(Boolean);
@@ -278,20 +337,23 @@ export const AdminPortal = ({ onGoToLanding }) => {
           const cols = lines[i].split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
           if (cols.length >= 2 && cols[0] && cols[1]) {
             imported.push({
-              id: `AU2026-${String(attendees.length + imported.length + 1).padStart(3, '0')}`,
               name: cols[0],
               email: cols[1],
               phone: cols[2] || '+91 90000 00000',
               category: cols[3] || 'Other',
               organization: cols[4] || 'Independent',
-              status: cols[5] || 'Registered',
-              date: cols[6] || '24 Oct, 09:45 AM'
+              status: cols[5] || 'Registered'
             });
           }
         }
         if (imported.length > 0) {
-          setAttendees((prev) => [...imported, ...prev]);
-          showToast(`Imported ${imported.length} attendees from CSV!`);
+          try {
+            await api.importBatchRegistrations(imported);
+            refreshData();
+            showToast(`Imported ${imported.length} attendees from CSV!`);
+          } catch (err) {
+            showToast(`Error importing to database: ${err.message}`);
+          }
         }
       } catch {
         showToast('Error reading CSV file');
@@ -311,7 +373,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
       a.category,
       a.organization,
       a.status,
-      a.date
+      a.date || a.registeredAt || '24 Oct'
     ]);
     const csvContent = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -330,28 +392,34 @@ export const AdminPortal = ({ onGoToLanding }) => {
     if (!checkSearch.trim()) return;
     const q = checkSearch.toLowerCase().trim();
     const found = attendees.find((a) =>
-      [a.name, a.email, a.phone, a.organization, a.id].some((val) => val.toLowerCase().includes(q))
+      [a.name, a.email, a.phone, a.organization, a.id].some((val) => String(val).toLowerCase().includes(q))
     );
     setSelectedAttendee(found || null);
   };
 
   // ================= ADMIN ANNOUNCEMENT CRUD =================
-  const handleCreateAnnouncement = (statusToSet = 'Published') => {
+  const handleCreateAnnouncement = async (statusToSet = 'Published') => {
     if (!newAnnouncement.title || !newAnnouncement.message) {
       showToast('Title and message are required');
       return;
     }
-    const item = {
-      id: Date.now(),
-      title: newAnnouncement.title,
-      message: newAnnouncement.message,
-      type: newAnnouncement.type || 'General',
-      status: statusToSet,
-      date: newAnnouncement.date || '24 Oct, 09:45 AM'
-    };
-    setAnnouncements([item, ...announcements]);
-    setNewAnnouncement({ title: '', message: '', type: 'General', date: '' });
-    showToast(`Announcement published!`);
+    try {
+      const res = await api.createAnnouncement({
+        title: newAnnouncement.title,
+        message: newAnnouncement.message,
+        type: newAnnouncement.type || 'General',
+        status: statusToSet
+      });
+      if (res?.announcement) {
+        setAnnouncements((prev) => [res.announcement, ...prev]);
+      } else {
+        refreshData();
+      }
+      setNewAnnouncement({ title: '', message: '', type: 'General', date: '' });
+      showToast('Announcement published to database!');
+    } catch (err) {
+      showToast(`Error publishing announcement: ${err.message}`);
+    }
   };
 
   const handleUpdateAnnouncement = (e) => {
@@ -589,6 +657,9 @@ export const AdminPortal = ({ onGoToLanding }) => {
       {/* SIDEBAR */}
       <aside className="admin-sidebar">
         <div className="admin-brand">
+          <div className="partner-logo-badge" title="DataDice Technologies · AU-QUASAR · Alliance University">
+            <img src="/images/event_partners_banner.png" alt="DataDice · AU-QUASAR · Alliance University" />
+          </div>
           <div className="brand-logo">
             IDEA → AI → <br />
             <span>IMPACT</span>
@@ -763,10 +834,10 @@ export const AdminPortal = ({ onGoToLanding }) => {
                     <strong>{totalCheckedIn}</strong>
                   </div>
                   <div className="stat-card-note">
-                    {Math.round((totalCheckedIn / totalRegistrations) * 100)}%
+                    {totalRegistrations > 0 ? Math.round((totalCheckedIn / totalRegistrations) * 100) : 0}%
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: `${(totalCheckedIn / totalRegistrations) * 100}%`, background: 'var(--accent-green)' }} /></div>
+                <div className="bar-track"><span style={{ width: `${totalRegistrations > 0 ? (totalCheckedIn / totalRegistrations) * 100 : 0}%`, background: 'var(--accent-green)' }} /></div>
               </div>
 
               <div className="stat-card">
@@ -777,10 +848,10 @@ export const AdminPortal = ({ onGoToLanding }) => {
                     <strong>{totalYetToArrive}</strong>
                   </div>
                   <div className="stat-card-note">
-                    {Math.round((totalYetToArrive / totalRegistrations) * 100)}%
+                    {totalRegistrations > 0 ? Math.round((totalYetToArrive / totalRegistrations) * 100) : 0}%
                   </div>
                 </div>
-                <div className="bar-track"><span style={{ width: `${(totalYetToArrive / totalRegistrations) * 100}%`, background: 'var(--accent-amber)' }} /></div>
+                <div className="bar-track"><span style={{ width: `${totalRegistrations > 0 ? (totalYetToArrive / totalRegistrations) * 100 : 0}%`, background: 'var(--accent-amber)' }} /></div>
               </div>
 
               <div className="stat-card">
@@ -792,7 +863,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
                   </div>
                   <div className="stat-card-note">8–12 target</div>
                 </div>
-                <div className="bar-track"><span style={{ width: '25%', background: 'var(--accent-purple)' }} /></div>
+                <div className="bar-track"><span style={{ width: `${Math.min(100, teamRegistrations * 10)}%`, background: 'var(--accent-purple)' }} /></div>
               </div>
             </div>
 
@@ -802,20 +873,20 @@ export const AdminPortal = ({ onGoToLanding }) => {
                 <div className="card-head">
                   <h3>Registration Status</h3>
                   <div className="chart-legend">
-                    <span><i className="dot blue" /> Total</span>
-                    <span><i className="dot purple" /> Checked In</span>
+                    <span><i className="dot blue" /> Total ({totalRegistrations})</span>
+                    <span><i className="dot purple" /> Checked In ({totalCheckedIn})</span>
                   </div>
                 </div>
                 <div className="chart-wrapper">
                   <svg viewBox="0 0 650 190" preserveAspectRatio="none">
                     <polyline
-                      points="0,165 65,151 130,137 195,119 260,103 325,88 390,72 455,56 520,42 585,26 650,12"
+                      points={totalRegistrations > 0 ? "0,165 65,151 130,137 195,119 260,103 325,88 390,72 455,56 520,42 585,26 650,12" : "0,180 650,180"}
                       fill="none"
                       stroke="#1c7fff"
                       strokeWidth="2.5"
                     />
                     <polyline
-                      points="0,176 65,166 130,154 195,142 260,130 325,119 390,105 455,91 520,78 585,65 650,52"
+                      points={totalCheckedIn > 0 ? "0,176 65,166 130,154 195,142 260,130 325,119 390,105 455,91 520,78 585,65 650,52" : "0,180 650,180"}
                       fill="none"
                       stroke="#9646ff"
                       strokeWidth="2.5"
@@ -839,13 +910,11 @@ export const AdminPortal = ({ onGoToLanding }) => {
                 <div className="donut-container">
                   <div className="donut-chart" />
                   <div className="donut-legend-grid">
-                    <span>🔵 Students <b>42%</b></span>
-                    <span>🟣 Founders <b>18%</b></span>
-                    <span>🔴 Working Pros <b>14%</b></span>
-                    <span>🟡 Researchers <b>10%</b></span>
-                    <span>🟢 Startups <b>8%</b></span>
-                    <span>🔹 Developers <b>6%</b></span>
-                    <span>⚪ Others <b>2%</b></span>
+                    {categoryStats.map((c) => (
+                      <span key={c.name}>
+                        {c.name} <b>{c.pct}%</b> ({c.count})
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -878,28 +947,36 @@ export const AdminPortal = ({ onGoToLanding }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {attendees.slice(0, 5).map((a, i) => (
-                      <tr key={a.id || i}>
-                        <td>{i + 1}</td>
-                        <td>
-                          <div className="person">
-                            <span className="initial">
-                              {a.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-                            </span>
-                            <strong>{a.name}</strong>
-                          </div>
+                    {attendees.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: 'center', padding: '36px 12px', color: 'var(--text-dim)', fontSize: '13px' }}>
+                          No registrations yet. When non-admin attendees register, their info will immediately appear here.
                         </td>
-                        <td>{a.email}</td>
-                        <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
-                        <td>{a.organization}</td>
-                        <td>
-                          <span className={`pill ${a.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
-                            {a.status === 'Checked In' ? '✓ Checked In' : '◷ Registered'}
-                          </span>
-                        </td>
-                        <td>{a.date}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      attendees.slice(0, 5).map((a, i) => (
+                        <tr key={a.id || i}>
+                          <td>{i + 1}</td>
+                          <td>
+                            <div className="person">
+                              <span className="initial">
+                                {a.name ? a.name.split(' ').map((n) => n[0]).slice(0, 2).join('') : 'P'}
+                              </span>
+                              <strong>{a.name}</strong>
+                            </div>
+                          </td>
+                          <td>{a.email}</td>
+                          <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
+                          <td>{a.organization}</td>
+                          <td>
+                            <span className={`pill ${a.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
+                              {a.status === 'Checked In' ? '✓ Checked In' : '◷ Registered'}
+                            </span>
+                          </td>
+                          <td>{a.date || a.registeredAt || '24 Oct'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -971,38 +1048,46 @@ export const AdminPortal = ({ onGoToLanding }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRegs.map((a, i) => (
-                        <tr key={a.id || i}>
-                          <td>{i + 1}</td>
-                          <td>
-                            <div className="person">
-                              <span className="initial">
-                                {a.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-                              </span>
-                              <span>{a.name}</span>
-                            </div>
-                          </td>
-                          <td>{a.email}</td>
-                          <td>{a.phone}</td>
-                          <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
-                          <td>{a.organization}</td>
-                          <td>
-                            <span className={`pill ${a.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
-                              {a.status}
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              className="btn btn-ghost"
-                              style={{ padding: '2px 7px', fontSize: '10.5px' }}
-                              onClick={() => toggleCheckin(a.id)}
-                            >
-                              {a.status === 'Checked In' ? 'Undo' : 'Check In'}
-                            </button>
+                      {filteredRegs.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', padding: '36px 12px', color: 'var(--text-dim)', fontSize: '13px' }}>
+                            No registrations found. As non-admin participants register from the portal or landing page, their details will appear here.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredRegs.map((a, i) => (
+                          <tr key={a.id || i}>
+                            <td>{i + 1}</td>
+                            <td>
+                              <div className="person">
+                                <span className="initial">
+                                  {a.name ? a.name.split(' ').map((n) => n[0]).slice(0, 2).join('') : 'P'}
+                                </span>
+                                <span>{a.name}</span>
+                              </div>
+                            </td>
+                            <td>{a.email}</td>
+                            <td>{a.phone}</td>
+                            <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
+                            <td>{a.organization}</td>
+                            <td>
+                              <span className={`pill ${a.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
+                                {a.status}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                style={{ padding: '2px 7px', fontSize: '10.5px' }}
+                                onClick={() => toggleCheckin(a.id)}
+                              >
+                                {a.status === 'Checked In' ? 'Undo' : 'Check In'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1401,30 +1486,38 @@ export const AdminPortal = ({ onGoToLanding }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAttendees.map((a, i) => (
-                      <tr key={a.id || i}>
-                        <td><input type="checkbox" /></td>
-                        <td>{i + 1}</td>
-                        <td>
-                          <div className="person">
-                            <span className="initial">
-                              {a.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-                            </span>
-                            <strong>{a.name}</strong>
-                          </div>
+                    {filteredAttendees.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '36px 12px', color: 'var(--text-dim)', fontSize: '13px' }}>
+                          No attendees registered yet.
                         </td>
-                        <td>{a.email}</td>
-                        <td>{a.phone}</td>
-                        <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
-                        <td>{a.organization}</td>
-                        <td>
-                          <span className={`pill ${a.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
-                            {a.status}
-                          </span>
-                        </td>
-                        <td>{a.date}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredAttendees.map((a, i) => (
+                        <tr key={a.id || i}>
+                          <td><input type="checkbox" /></td>
+                          <td>{i + 1}</td>
+                          <td>
+                            <div className="person">
+                              <span className="initial">
+                                {a.name ? a.name.split(' ').map((n) => n[0]).slice(0, 2).join('') : 'P'}
+                              </span>
+                              <strong>{a.name}</strong>
+                            </div>
+                          </td>
+                          <td>{a.email}</td>
+                          <td>{a.phone}</td>
+                          <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
+                          <td>{a.organization}</td>
+                          <td>
+                            <span className={`pill ${a.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
+                              {a.status}
+                            </span>
+                          </td>
+                          <td>{a.date || a.registeredAt || '24 Oct'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1451,13 +1544,13 @@ export const AdminPortal = ({ onGoToLanding }) => {
                 <div className="chart-wrapper">
                   <svg viewBox="0 0 650 190" preserveAspectRatio="none">
                     <polyline
-                      points="0,164 70,145 140,130 210,111 280,91 350,72 420,56 490,39 560,22 650,8"
+                      points={totalRegistrations > 0 ? "0,164 70,145 140,130 210,111 280,91 350,72 420,56 490,39 560,22 650,8" : "0,180 650,180"}
                       fill="none"
                       stroke="#1c7fff"
                       strokeWidth="2.5"
                     />
                     <polyline
-                      points="0,177 70,164 140,151 210,137 280,123 350,111 420,99 490,85 560,70 650,53"
+                      points={totalCheckedIn > 0 ? "0,177 70,164 140,151 210,137 280,123 350,111 420,99 490,85 560,70 650,53" : "0,180 650,180"}
                       fill="none"
                       stroke="#9646ff"
                       strokeWidth="2.5"
@@ -1473,13 +1566,11 @@ export const AdminPortal = ({ onGoToLanding }) => {
                 <div className="donut-container">
                   <div className="donut-chart" />
                   <div className="donut-legend-grid">
-                    <span>Students <b>42%</b></span>
-                    <span>Founders <b>18%</b></span>
-                    <span>Working Pros <b>14%</b></span>
-                    <span>Researchers <b>10%</b></span>
-                    <span>Startups <b>8%</b></span>
-                    <span>Developers <b>6%</b></span>
-                    <span>Others <b>2%</b></span>
+                    {categoryStats.map((c) => (
+                      <span key={c.name}>
+                        {c.name} <b>{c.pct}%</b> ({c.count})
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1491,15 +1582,21 @@ export const AdminPortal = ({ onGoToLanding }) => {
                   <h3>Institution Share</h3>
                 </div>
                 <div className="progress-stack" style={{ marginTop: '8px' }}>
-                  {ORGS.slice(0, 5).map((o) => (
-                    <div key={o.name} className="progress-row">
-                      <span>{o.name}</span>
-                      <div className="bar-track">
-                        <span style={{ width: `${(o.count / 48) * 100}%`, background: o.color }} />
-                      </div>
-                      <b>{o.count}</b>
+                  {orgsList.length === 0 ? (
+                    <div style={{ color: 'var(--text-dim)', fontSize: '12px', padding: '14px 0' }}>
+                      No institutions registered yet.
                     </div>
-                  ))}
+                  ) : (
+                    orgsList.slice(0, 5).map((o) => (
+                      <div key={o.name} className="progress-row">
+                        <span>{o.name}</span>
+                        <div className="bar-track">
+                          <span style={{ width: `${o.pct}%`, background: o.color }} />
+                        </div>
+                        <b>{o.count}</b>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1508,26 +1605,23 @@ export const AdminPortal = ({ onGoToLanding }) => {
                   <h3>Check-In Yield</h3>
                 </div>
                 <div className="progress-stack" style={{ marginTop: '8px' }}>
-                  <div className="progress-row">
-                    <span>Students</span>
-                    <div className="bar-track"><span style={{ width: '72%', background: 'var(--accent-blue)' }} /></div>
-                    <b>72%</b>
-                  </div>
-                  <div className="progress-row">
-                    <span>Founders</span>
-                    <div className="bar-track"><span style={{ width: '65%', background: 'var(--accent-purple)' }} /></div>
-                    <b>65%</b>
-                  </div>
-                  <div className="progress-row">
-                    <span>Working Pros</span>
-                    <div className="bar-track"><span style={{ width: '58%', background: 'var(--accent-magenta)' }} /></div>
-                    <b>58%</b>
-                  </div>
-                  <div className="progress-row">
-                    <span>Researchers</span>
-                    <div className="bar-track"><span style={{ width: '69%', background: 'var(--accent-amber)' }} /></div>
-                    <b>69%</b>
-                  </div>
+                  {categoryStats.filter((c) => c.count > 0).length === 0 ? (
+                    <div style={{ color: 'var(--text-dim)', fontSize: '12px', padding: '14px 0' }}>
+                      No check-in data yet.
+                    </div>
+                  ) : (
+                    categoryStats.filter((c) => c.count > 0).map((c) => {
+                      const checkedCount = attendees.filter((a) => (a.category || 'Other') === c.name && a.status === 'Checked In').length;
+                      const yieldPct = c.count > 0 ? Math.round((checkedCount / c.count) * 100) : 0;
+                      return (
+                        <div key={c.name} className="progress-row">
+                          <span>{c.name}</span>
+                          <div className="bar-track"><span style={{ width: `${yieldPct}%`, background: 'var(--accent-blue)' }} /></div>
+                          <b>{yieldPct}%</b>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -1608,48 +1702,60 @@ export const AdminPortal = ({ onGoToLanding }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredAnnouncements.map((a, i) => (
-                        <tr key={a.id || i}>
-                          <td>{i + 1}</td>
-                          <td>
-                            <strong>⚑ {a.title}</strong>
-                            <div className="text-dim" style={{ fontSize: '10.5px', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {a.message}
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`pill ${getCategoryClass(a.type)}`}>{a.type}</span>
-                          </td>
-                          <td>
-                            <span className={`pill ${a.status === 'Published' ? 'pill-green' : 'pill-amber'}`}>
-                              {a.status}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: '11px' }}>{a.date}</td>
-                          <td style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: '5px' }}>
-                              <button
-                                type="button"
-                                className="admin-action-btn"
-                                onClick={() => setEditingAnnouncement(a)}
-                                title="Edit announcement"
-                              >
-                                <Edit2 size={12} />
-                                <span>Edit</span>
-                              </button>
-                              <button
-                                type="button"
-                                className="admin-action-btn delete"
-                                onClick={() => handleDeleteAnnouncement(a.id)}
-                                title="Delete announcement"
-                              >
-                                <Trash2 size={12} />
-                                <span>Delete</span>
-                              </button>
+                      {filteredAnnouncements.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                              <Bell size={24} style={{ opacity: 0.4 }} />
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '13px' }}>No Announcements Posted</strong>
+                              <span style={{ fontSize: '12px' }}>Use the form on the right to publish live event announcements to all portals.</span>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredAnnouncements.map((a, i) => (
+                          <tr key={a.id || i}>
+                            <td>{i + 1}</td>
+                            <td>
+                              <strong>⚑ {a.title}</strong>
+                              <div className="text-dim" style={{ fontSize: '10.5px', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {a.message}
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`pill ${getCategoryClass(a.type)}`}>{a.type}</span>
+                            </td>
+                            <td>
+                              <span className={`pill ${a.status === 'Published' ? 'pill-green' : 'pill-amber'}`}>
+                                {a.status}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: '11px' }}>{a.date}</td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', gap: '5px' }}>
+                                <button
+                                  type="button"
+                                  className="admin-action-btn"
+                                  onClick={() => setEditingAnnouncement(a)}
+                                  title="Edit announcement"
+                                >
+                                  <Edit2 size={12} />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-action-btn delete"
+                                  onClick={() => handleDeleteAnnouncement(a.id)}
+                                  title="Delete announcement"
+                                >
+                                  <Trash2 size={12} />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

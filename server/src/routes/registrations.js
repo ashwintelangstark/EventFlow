@@ -41,15 +41,17 @@ router.get('/stats', async (req, res) => {
       const checkedIn = data.filter((d) => d.status === 'Checked In').length;
       const yetToArrive = Math.max(0, total - checkedIn);
 
-      // Compute category breakdown
       const categories = {
-        students: data.filter((d) => d.category?.toLowerCase() === 'student').length,
+        students: data.filter((d) => d.category?.toLowerCase().includes('student')).length,
         workingProfessionals: data.filter((d) => d.category?.toLowerCase().includes('professional')).length,
-        founders: data.filter((d) => d.category?.toLowerCase() === 'founder').length,
-        researchers: data.filter((d) => d.category?.toLowerCase() === 'researcher').length,
-        startups: data.filter((d) => d.category?.toLowerCase() === 'startup').length,
-        developers: data.filter((d) => d.category?.toLowerCase() === 'developer').length,
-        others: data.filter((d) => d.category?.toLowerCase() === 'other' || !d.category).length
+        founders: data.filter((d) => d.category?.toLowerCase().includes('founder')).length,
+        researchers: data.filter((d) => d.category?.toLowerCase().includes('research')).length,
+        startups: data.filter((d) => d.category?.toLowerCase().includes('startup') && !d.category?.toLowerCase().includes('founder')).length,
+        developers: data.filter((d) => d.category?.toLowerCase().includes('developer')).length,
+        others: data.filter((d) => {
+          const c = (d.category || '').toLowerCase();
+          return !c || (!c.includes('student') && !c.includes('professional') && !c.includes('founder') && !c.includes('research') && !c.includes('startup') && !c.includes('developer'));
+        }).length
       };
 
       return res.json({
@@ -139,7 +141,7 @@ router.post('/', async (req, res) => {
       const payload = {
         full_name: name.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone || null,
+        phone: (phone && phone.trim()) ? phone.trim() : '+91 90000 00000',
         category: category || 'Student',
         organization: organization || 'Alliance University',
         designation: designation || 'Participant',
@@ -150,16 +152,37 @@ router.post('/', async (req, res) => {
         status: 'Registered'
       };
 
-      const { data, error } = await supabaseAdmin
+      // Check if attendee with same email already exists
+      const { data: existing } = await supabaseAdmin
         .from('registrations')
-        .insert(payload)
-        .select()
-        .single();
+        .select('*')
+        .eq('email', payload.email)
+        .limit(1);
+
+      let data, error;
+      if (existing && existing.length > 0) {
+        const updateRes = await supabaseAdmin
+          .from('registrations')
+          .update(payload)
+          .eq('id', existing[0].id)
+          .select()
+          .single();
+        data = updateRes.data;
+        error = updateRes.error;
+      } else {
+        const insertRes = await supabaseAdmin
+          .from('registrations')
+          .insert(payload)
+          .select()
+          .single();
+        data = insertRes.data;
+        error = insertRes.error;
+      }
 
       if (error) throw error;
 
       return res.status(201).json({
-        message: 'Registration successful',
+        message: existing?.length ? 'Registration details updated' : 'Registration successful',
         attendee: formatAttendee(data)
       });
     } catch (err) {

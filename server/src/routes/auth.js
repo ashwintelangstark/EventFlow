@@ -88,37 +88,107 @@ router.post('/signup', async (req, res) => {
       // Only the pre-registered admin@gmail.com can be admin.
       const systemRole = cleanEmail === 'admin@gmail.com' ? 'admin' : 'staff';
 
-      const { data, error } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-        options: {
-          data: {
+      let userObj;
+      let accessToken = 'confirmed';
+
+      if (supabaseAdmin) {
+        const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: cleanEmail,
+          password,
+          email_confirm: true,
+          user_metadata: {
             name: displayName,
             role: systemRole,
             category: category || 'Student',
             organization: organization || 'Alliance University',
             phone: phone || ''
           }
-        }
-      });
+        });
 
-      if (error) {
-        return res.status(400).json({ error: error.message });
+        if (createError) {
+          if (createError.message?.toLowerCase().includes('already')) {
+            return res.status(400).json({ error: 'An account with this email already exists' });
+          }
+          const { data: fallback, error: fbError } = await supabase.auth.signUp({
+            email: cleanEmail,
+            password,
+            options: {
+              data: {
+                name: displayName,
+                role: systemRole,
+                category: category || 'Student',
+                organization: organization || 'Alliance University',
+                phone: phone || ''
+              }
+            }
+          });
+          if (fbError) return res.status(400).json({ error: fbError.message });
+          userObj = fallback.user;
+          accessToken = fallback.session?.access_token || 'confirmed';
+        } else {
+          userObj = created.user;
+        }
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: {
+              name: displayName,
+              role: systemRole,
+              category: category || 'Student',
+              organization: organization || 'Alliance University',
+              phone: phone || ''
+            }
+          }
+        });
+
+        if (error) {
+          return res.status(400).json({ error: error.message });
+        }
+        userObj = data.user;
+        accessToken = data.session?.access_token || 'confirmed';
       }
 
       // Upsert profile into public.profiles table using admin client
-      if (data.user && supabaseAdmin) {
+      if (userObj && supabaseAdmin) {
         await supabaseAdmin.from('profiles').upsert({
-          id: data.user.id,
+          id: userObj.id,
           full_name: displayName,
           role: systemRole,
           category: category || 'Student',
           organization: organization || 'Alliance University',
           phone: phone || null
         });
+
+        // Register participant so their details immediately appear in Admin Portal
+        if (systemRole !== 'admin') {
+          const { data: existingReg } = await supabaseAdmin
+            .from('registrations')
+            .select('id')
+            .eq('email', cleanEmail)
+            .limit(1);
+
+          if (!existingReg || existingReg.length === 0) {
+            const { error: insErr } = await supabaseAdmin.from('registrations').insert({
+              user_id: userObj.id,
+              full_name: displayName,
+              email: cleanEmail,
+              phone: (phone && phone.trim()) ? phone.trim() : '+91 90000 00000',
+              category: category || 'Student',
+              organization: organization || 'Alliance University',
+              designation: 'Participant',
+              status: 'Registered',
+              created_at: new Date().toISOString()
+            });
+            if (insErr) {
+              console.error('Error auto-registering user in registrations table:', insErr);
+            }
+          }
+        }
       }
 
-      const user = formatUser(data.user, {
+      const user = formatUser(userObj, {
         full_name: displayName,
         role: systemRole,
         category: category || 'Student',
@@ -128,7 +198,7 @@ router.post('/signup', async (req, res) => {
 
       return res.status(201).json({
         user,
-        token: data.session?.access_token || 'confirmed'
+        token: accessToken
       });
     } catch (err) {
       console.error('Signup error:', err);
