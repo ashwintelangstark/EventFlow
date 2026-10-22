@@ -407,37 +407,6 @@
   text-decoration: underline;
 }
 
-/* Quick Fill Demo Section */
-.quick-fill-box {
-  margin-top: 8px;
-  padding: 10px 12px;
-  background: rgba(12, 33, 60, 0.6);
-  border: 1px dashed rgba(44, 98, 160, 0.6);
-  border-radius: var(--radius-sm);
-}
-
-.quick-fill-label {
-  display: block;
-  font-size: 11px;
-  color: var(--cyan);
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.quick-fill-buttons {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.quick-fill-buttons button {
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.quick-fill-buttons button:hover {
-  opacity: 0.8;
-}
 
 .auth-alert {
   padding: 10px 14px;

@@ -1,88 +1,166 @@
 import express from 'express';
-import { mockStore } from '../data/mockStore.js';
+import { isSupabaseConfigured, supabaseAdmin } from '../config/supabase.js';
 
 const router = express.Router();
 
+const formatAnnouncement = (row) => {
+  const d = new Date(row.scheduled_at || row.created_at || Date.now());
+  const dateFormatted = `${d.getDate()} Oct, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  return {
+    id: row.id,
+    title: row.title,
+    message: row.message,
+    type: row.type || 'General',
+    status: row.status || 'Published',
+    date: dateFormatted,
+    createdAt: row.created_at
+  };
+};
+
 // GET /api/announcements
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { q, type, status } = req.query;
-  let items = [...mockStore.announcements];
 
-  if (q) {
-    const search = q.toLowerCase();
-    items = items.filter(
-      (a) => a.title.toLowerCase().includes(search) || a.message.toLowerCase().includes(search)
-    );
+  if (isSupabaseConfigured && supabaseAdmin) {
+    try {
+      let query = supabaseAdmin
+        .from('announcements')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (type && type !== 'All Categories') {
+        query = query.eq('type', type);
+      }
+
+      if (status && status !== 'All Status') {
+        query = query.eq('status', status);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let items = data.map(formatAnnouncement);
+
+      if (q) {
+        const search = q.toLowerCase();
+        items = items.filter(
+          (a) => a.title.toLowerCase().includes(search) || a.message.toLowerCase().includes(search)
+        );
+      }
+
+      return res.json({
+        total: items.length,
+        announcements: items
+      });
+    } catch (err) {
+      console.error('Announcements fetch error:', err);
+      return res.status(500).json({ error: 'Failed to fetch announcements from database' });
+    }
   }
 
-  if (type && type !== 'All Categories') {
-    items = items.filter((a) => a.type.toLowerCase() === type.toLowerCase());
-  }
-
-  if (status && status !== 'All Status') {
-    items = items.filter((a) => a.status.toLowerCase() === status.toLowerCase());
-  }
-
-  res.json({
-    total: items.length,
-    announcements: items
-  });
+  res.status(503).json({ error: 'Database service unavailable' });
 });
 
 // POST /api/announcements
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { title, message, type, date, status } = req.body;
 
   if (!title || !message) {
     return res.status(400).json({ error: 'Title and message are required' });
   }
 
-  const now = new Date();
-  const dateFormatted = date || `24 Oct, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  if (isSupabaseConfigured && supabaseAdmin) {
+    try {
+      const payload = {
+        title: title.trim(),
+        message: message.trim(),
+        type: type || 'General',
+        status: status || 'Published',
+        scheduled_at: new Date().toISOString()
+      };
 
-  const newAnnouncement = {
-    id: `ann_${Date.now()}`,
-    title,
-    message,
-    type: type || 'General',
-    status: status || 'Published',
-    date: dateFormatted
-  };
+      const { data, error } = await supabaseAdmin
+        .from('announcements')
+        .insert(payload)
+        .select()
+        .single();
 
-  mockStore.announcements.unshift(newAnnouncement);
+      if (error) throw error;
 
-  res.status(201).json({
-    message: 'Announcement published successfully',
-    announcement: newAnnouncement
-  });
+      return res.status(201).json({
+        message: 'Announcement published successfully',
+        announcement: formatAnnouncement(data)
+      });
+    } catch (err) {
+      console.error('Announcements insert error:', err);
+      return res.status(500).json({ error: 'Failed to publish announcement' });
+    }
+  }
+
+  res.status(503).json({ error: 'Database service unavailable' });
 });
 
 // PATCH /api/announcements/:id
-router.patch('/:id', (req, res) => {
+router.patch('/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, message, type, date, status } = req.body;
-  const announcement = mockStore.announcements.find((a) => String(a.id) === String(id));
-  if (!announcement) {
-    return res.status(404).json({ error: 'Announcement not found' });
-  }
-  if (title) announcement.title = title;
-  if (message) announcement.message = message;
-  if (type) announcement.type = type;
-  if (date) announcement.date = date;
-  if (status) announcement.status = status;
+  const { title, message, type, status } = req.body;
 
-  res.json({ message: 'Announcement updated successfully', announcement });
+  if (isSupabaseConfigured && supabaseAdmin) {
+    try {
+      const updatePayload = {};
+      if (title) updatePayload.title = title.trim();
+      if (message) updatePayload.message = message.trim();
+      if (type) updatePayload.type = type;
+      if (status) updatePayload.status = status;
+
+      const { data, error } = await supabaseAdmin
+        .from('announcements')
+        .update(updatePayload)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return res.json({
+        message: 'Announcement updated successfully',
+        announcement: formatAnnouncement(data)
+      });
+    } catch (err) {
+      console.error('Announcements update error:', err);
+      return res.status(500).json({ error: 'Failed to update announcement' });
+    }
+  }
+
+  res.status(503).json({ error: 'Database service unavailable' });
 });
 
 // DELETE /api/announcements/:id
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-  const index = mockStore.announcements.findIndex((a) => String(a.id) === String(id));
-  if (index === -1) {
-    return res.status(404).json({ error: 'Announcement not found' });
+
+  if (isSupabaseConfigured && supabaseAdmin) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('announcements')
+        .delete()
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return res.json({
+        message: 'Announcement deleted',
+        announcement: formatAnnouncement(data)
+      });
+    } catch (err) {
+      console.error('Announcements delete error:', err);
+      return res.status(500).json({ error: 'Failed to delete announcement' });
+    }
   }
-  const deleted = mockStore.announcements.splice(index, 1);
-  res.json({ message: 'Announcement deleted', announcement: deleted[0] });
+
+  res.status(503).json({ error: 'Database service unavailable' });
 });
 
 export default router;

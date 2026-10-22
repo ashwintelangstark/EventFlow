@@ -21,7 +21,7 @@ import {
 import './AuthPage.css';
 
 export const AuthPage = () => {
-  const { login, signup, quickLogin, loading } = useAuth();
+  const { login, signup, loading } = useAuth();
   
   // Initialize mode from URL params (?mode=signup, ?register=true, or hash #register)
   const [mode, setMode] = useState(() => {
@@ -129,11 +129,6 @@ export const AuthPage = () => {
     }
   };
 
-  const prefillDemo = (demoEmail, demoPass) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setError('');
-  };
 
   return (
     <div className="auth-wrapper">
@@ -360,7 +355,7 @@ export const AuthPage = () => {
                     />
                     <span>Remember me</span>
                   </label>
-                  <button type="button" className="link-btn" onClick={() => alert('Password reset link sent to demo mail.')}>
+                  <button type="button" className="link-btn" onClick={() => alert('Password reset instructions will be sent to your registered email address.')}>
                     Forgot password?
                   </button>
                 </div>
@@ -369,37 +364,6 @@ export const AuthPage = () => {
                   <span>{loading ? 'Logging in...' : 'Login'}</span>
                   <ArrowRight size={16} />
                 </button>
-
-                {/* Instant 1-Click Role Access */}
-                <div className="quick-fill-box">
-                  <span className="quick-fill-label">Instant 1-Click Access (Testing):</span>
-                  <div className="quick-fill-buttons">
-                    <button
-                      type="button"
-                      className="pill pill-purple"
-                      onClick={() => quickLogin('admin')}
-                      title="Enter directly as Ashwin Telang (Admin)"
-                    >
-                      Enter as Admin (Ashwin)
-                    </button>
-                    <button
-                      type="button"
-                      className="pill pill-blue"
-                      onClick={() => quickLogin('staff')}
-                      title="Enter directly as Priya Sharma (Staff)"
-                    >
-                      Enter as Staff (Priya)
-                    </button>
-                    <button
-                      type="button"
-                      className="pill pill-cyan"
-                      onClick={() => quickLogin('attendee')}
-                      title="Enter directly as Rohan Patil (Student)"
-                    >
-                      Enter as Student (Rohan)
-                    </button>
-                  </div>
-                </div>
 
                 <div className="form-footer-link">
                   <span>Don't have an account?</span>{' '}

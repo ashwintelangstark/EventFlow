@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthPage } from './pages/AuthPage';
 import { AdminPortal } from './pages/AdminPortal';
 import { NonAdminPortal } from './pages/NonAdminPortal';
-import { QuickDemoSwitcher } from './components/QuickDemoSwitcher';
 
 const MainView = () => {
   const { isAuthenticated, role } = useAuth();
@@ -23,8 +22,6 @@ export default function App() {
   return (
     <AuthProvider>
       <MainView />
-      {/* Floating 1-Click Role Switcher for instant testing */}
-      <QuickDemoSwitcher />
     </AuthProvider>
   );
 }

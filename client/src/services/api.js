@@ -1,130 +1,36 @@
-// Central API Service with Graceful Fallback
+// Central API Service connecting directly to EventFlow Backend & Supabase
 const API_BASE = '/api';
 
 export const api = {
   // Auth
   async login(email, password) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to login');
-      return data;
-    } catch (err) {
-      console.warn('API call failed, using client fallback:', err.message);
-      // Client-side fallback if backend is booting or offline
-      if (email.includes('admin') || email === 'admin@eventflow.com') {
-        return {
-          user: {
-            id: 'usr_admin',
-            name: 'Ashwin Telang',
-            email: 'admin@eventflow.com',
-            role: 'admin',
-            category: 'Admin',
-            organization: 'Alliance University',
-            avatar: 'A'
-          },
-          token: 'mock_token_admin'
-        };
-      }
-      return {
-        user: {
-          id: 'usr_staff',
-          name: 'Priya Sharma',
-          email: 'priya@eventflow.com',
-          role: 'staff',
-          category: 'Event Staff',
-          organization: 'AU-QUASAR Operations',
-          avatar: 'P'
-        },
-        token: 'mock_token_staff'
-      };
-    }
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to login');
+    return data;
   },
 
   async signup(payload) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to sign up');
-      return data;
-    } catch (err) {
-      console.warn('API call failed, using client fallback:', err.message);
-      const isAdm = payload.email.includes('admin') || payload.role === 'admin';
-      return {
-        user: {
-          id: `usr_${Date.now()}`,
-          name: payload.name || payload.email.split('@')[0],
-          email: payload.email,
-          role: isAdm ? 'admin' : (payload.role || 'attendee'),
-          category: payload.category || 'Student',
-          organization: payload.organization || 'Alliance University',
-          avatar: (payload.name || payload.email).charAt(0).toUpperCase()
-        },
-        token: `mock_token_${Date.now()}`
-      };
-    }
+    const res = await fetch(`${API_BASE}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to sign up');
+    return data;
   },
 
-  async quickLogin(role) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/quick-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      return data;
-    } catch {
-      if (role === 'admin') {
-        return {
-          user: {
-            id: 'usr_admin_1',
-            name: 'Ashwin Telang',
-            email: 'admin@eventflow.com',
-            role: 'admin',
-            category: 'Admin',
-            organization: 'Alliance University',
-            avatar: 'A'
-          },
-          token: 'mock_token_admin'
-        };
-      }
-      if (role === 'staff') {
-        return {
-          user: {
-            id: 'usr_staff_1',
-            name: 'Priya Sharma',
-            email: 'priya@eventflow.com',
-            role: 'staff',
-            category: 'Event Staff',
-            organization: 'AU-QUASAR Operations',
-            avatar: 'P'
-          },
-          token: 'mock_token_staff'
-        };
-      }
-      return {
-        user: {
-          id: 'usr_student_1',
-          name: 'Rohan Patil',
-          email: 'rohan@eventflow.com',
-          role: 'attendee',
-          category: 'Student',
-          organization: 'Alliance University',
-          avatar: 'R'
-        },
-        token: 'mock_token_student'
-      };
-    }
+  async getMe(token) {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Session invalid');
+    return res.json();
   },
 
   // Registrations

@@ -1,13 +1,21 @@
 import express from 'express';
-import { mockStore } from '../data/mockStore.js';
-import { isSupabaseConfigured, supabase } from '../config/supabase.js';
+import { isSupabaseConfigured, supabase, supabaseAdmin } from '../config/supabase.js';
 
 const router = express.Router();
 
-// Helper to sanitize user object
-const sanitize = (user) => {
-  const { password, ...safeUser } = user;
-  return safeUser;
+// Helper to format user profile
+const formatUser = (authUser, profile = {}) => {
+  const displayName = profile?.full_name || authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'User';
+  return {
+    id: authUser.id,
+    email: authUser.email,
+    name: displayName,
+    role: profile?.role || authUser?.user_metadata?.role || 'staff',
+    category: profile?.category || authUser?.user_metadata?.category || 'Student',
+    organization: profile?.organization || authUser?.user_metadata?.organization || 'Alliance University',
+    phone: profile?.phone || authUser?.user_metadata?.phone || '',
+    avatar: displayName.charAt(0).toUpperCase()
+  };
 };
 
 // POST /api/auth/login
@@ -18,140 +26,146 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
-  // If Supabase is configured, use Supabase Auth
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      return res.status(401).json({ error: error.message });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password
+      });
+
+      if (error) {
+        return res.status(401).json({ error: error.message });
+      }
+
+      // Fetch profile from profiles table using admin client to ensure access
+      let profile = null;
+      if (supabaseAdmin) {
+        const { data: profData } = await supabaseAdmin
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+        profile = profData;
+      }
+
+      const user = formatUser(data.user, profile);
+
+      return res.json({
+        user,
+        token: data.session.access_token
+      });
+    } catch (err) {
+      console.error('Login error:', err);
+      return res.status(500).json({ error: 'Authentication service error' });
     }
-    // Fetch profile role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-
-    return res.json({
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        name: profile?.name || data.user.email.split('@')[0],
-        role: profile?.role || 'attendee',
-        category: profile?.category || 'Student',
-        organization: profile?.organization || 'Alliance University'
-      },
-      token: data.session.access_token
-    });
   }
 
-  // Fallback to Mock Auth
-  const user = mockStore.users.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase().trim()
-  );
-
-  if (!user || user.password !== password) {
-    return res.status(401).json({ error: 'Invalid email or password' });
-  }
-
-  return res.json({
-    user: sanitize(user),
-    token: `mock_jwt_token_${user.id}_${Date.now()}`
-  });
+  return res.status(503).json({ error: 'Database service is currently unavailable' });
 });
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
-  const { email, password, role, category, name, organization } = req.body;
+  const { email, password, role, category, name, organization, phone } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
-  // Map category to system role
-  // 'Admin' or explicitly selected role
-  let systemRole = 'attendee';
-  if (role === 'admin' || email.includes('admin')) {
-    systemRole = 'admin';
-  } else if (role === 'staff' || email.includes('staff')) {
-    systemRole = 'staff';
-  }
-
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name || email.split('@')[0],
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      const displayName = name || cleanEmail.split('@')[0].replace('.', ' ');
+
+      // Supabase role enum in DB is 'admin' | 'staff'
+      let systemRole = 'staff';
+      if (role === 'admin' || cleanEmail.includes('admin')) {
+        systemRole = 'admin';
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            name: displayName,
+            role: systemRole,
+            category: category || 'Student',
+            organization: organization || 'Alliance University',
+            phone: phone || ''
+          }
+        }
+      });
+
+      if (error) {
+        return res.status(400).json({ error: error.message });
+      }
+
+      // Upsert profile into public.profiles table using admin client
+      if (data.user && supabaseAdmin) {
+        await supabaseAdmin.from('profiles').upsert({
+          id: data.user.id,
+          full_name: displayName,
           role: systemRole,
           category: category || 'Student',
-          organization: organization || 'Alliance University'
-        }
+          organization: organization || 'Alliance University',
+          phone: phone || null
+        });
       }
-    });
 
-    if (error) {
-      return res.status(400).json({ error: error.message });
-    }
-
-    return res.status(201).json({
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        name: name || email.split('@')[0],
+      const user = formatUser(data.user, {
+        full_name: displayName,
         role: systemRole,
         category: category || 'Student',
-        organization: organization || 'Alliance University'
-      },
-      token: data.session?.access_token || 'pending_confirmation'
-    });
+        organization: organization || 'Alliance University',
+        phone
+      });
+
+      return res.status(201).json({
+        user,
+        token: data.session?.access_token || 'confirmed'
+      });
+    } catch (err) {
+      console.error('Signup error:', err);
+      return res.status(500).json({ error: 'Failed to create account in database' });
+    }
   }
 
-  // Mock Signup
-  const existing = mockStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  if (existing) {
-    return res.status(409).json({ error: 'An account with this email already exists' });
-  }
-
-  const displayName = name || email.split('@')[0].replace('.', ' ');
-  const newUser = {
-    id: `usr_${Date.now()}`,
-    email,
-    password,
-    name: displayName,
-    role: systemRole,
-    category: category || 'Student',
-    organization: organization || 'Alliance University',
-    avatar: displayName.charAt(0).toUpperCase()
-  };
-
-  mockStore.users.push(newUser);
-
-  return res.status(201).json({
-    user: sanitize(newUser),
-    token: `mock_jwt_token_${newUser.id}_${Date.now()}`
-  });
-});
-
-// POST /api/auth/quick-login (For rapid 1-click testing)
-router.post('/quick-login', (req, res) => {
-  const { role } = req.body; // 'admin' | 'staff' | 'attendee'
-  const target = mockStore.users.find((u) => u.role === (role || 'admin')) || mockStore.users[0];
-
-  return res.json({
-    user: sanitize(target),
-    token: `mock_jwt_token_${target.id}_${Date.now()}`
-  });
+  return res.status(503).json({ error: 'Database service is currently unavailable' });
 });
 
 // GET /api/auth/me
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized - Missing token' });
   }
-  // Return the default active session user or admin
-  res.json({ user: sanitize(mockStore.users[0]) });
+
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (error || !user) {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+      }
+
+      let profile = null;
+      if (supabaseAdmin) {
+        const { data: profData } = await supabaseAdmin
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        profile = profData;
+      }
+
+      return res.json({ user: formatUser(user, profile) });
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid session' });
+    }
+  }
+
+  return res.status(401).json({ error: 'Session unavailable' });
 });
 
 export default router;

@@ -44,28 +44,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const quickLogin = async (role) => {
-    setLoading(true);
-    try {
-      const data = await api.quickLogin(role);
-      setUser(data.user);
-      return data.user;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Allow switching roles dynamically while in-session
+  // Allow switching roles/views dynamically while in-session
   const setRole = (newRole) => {
-    if (!user) {
-      quickLogin(newRole);
-      return;
-    }
+    if (!user) return;
     const updated = {
       ...user,
-      role: newRole,
-      name: newRole === 'admin' ? 'Ashwin Telang' : (newRole === 'staff' ? 'Priya Sharma' : 'Rohan Patil'),
-      category: newRole === 'admin' ? 'Admin' : (newRole === 'staff' ? 'Event Staff' : 'Student')
+      role: newRole
     };
     setUser(updated);
   };
@@ -84,7 +68,6 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         signup,
-        quickLogin,
         setRole,
         logout
       }}
