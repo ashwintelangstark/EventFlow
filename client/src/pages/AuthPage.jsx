@@ -132,6 +132,17 @@ export const AuthPage = ({ onBackToLanding }) => {
 
   return (
     <div className="auth-wrapper">
+      {/* Background Video Loop */}
+      <video
+        className="auth-bg-video"
+        src="/landing_pg.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+      <div className="auth-video-overlay" />
+
       {/* Background Ambience Elements */}
       <div className="glow-sphere glow-sphere-1" />
       <div className="glow-sphere glow-sphere-2" />
