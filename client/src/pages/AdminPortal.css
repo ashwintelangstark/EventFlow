@@ -311,32 +311,42 @@
   width: 88px;
   height: 88px;
   border-radius: 50%;
-  background: conic-gradient(
-    #1c7fff 0 42%,
-    #9646ff 42% 60%,
-    #e024a5 60% 74%,
-    #f5a623 74% 84%,
-    #10d4a3 84% 92%,
-    #13dce5 92% 98%,
-    #6c86a8 98% 100%
-  );
   position: relative;
   flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .donut-chart::after {
-  content: "186\A Total";
-  white-space: pre;
+  display: none;
+}
+
+.donut-center-badge {
   position: absolute;
-  inset: 18px;
+  inset: 16px;
   border-radius: 50%;
   background: #06152b;
-  display: grid;
-  place-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  font-size: 9.5px;
-  color: var(--text-muted);
+  line-height: 1.1;
+  pointer-events: none;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.donut-center-badge strong {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.donut-center-badge small {
+  font-size: 8.5px;
   font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .donut-legend-grid {

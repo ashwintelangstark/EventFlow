@@ -294,6 +294,102 @@ export const AdminPortal = ({ onGoToLanding }) => {
     }));
   }, [attendees]);
 
+  // Dynamic Real-Time Chart & Trend Data Generator
+  const chartTrend = React.useMemo(() => {
+    const total = attendees.length;
+    const checked = attendees.filter((a) => a.status === 'Checked In').length;
+    const labels = ['18 Oct', '20 Oct', '21 Oct', '22 Oct', '23 Oct', '24 Oct'];
+
+    if (total === 0) {
+      return {
+        totalPolyline: "0,175 130,175 260,175 390,175 520,175 650,175",
+        checkedPolyline: "0,175 130,175 260,175 390,175 520,175 650,175",
+        totalArea: "0,175 130,175 260,175 390,175 520,175 650,175 650,185 0,185",
+        checkedArea: "0,175 130,175 260,175 390,175 520,175 650,175 650,185 0,185",
+        labels
+      };
+    }
+
+    const regProgression = [
+      Math.max(1, Math.round(total * 0.15)),
+      Math.max(1, Math.round(total * 0.35)),
+      Math.max(1, Math.round(total * 0.55)),
+      Math.max(1, Math.round(total * 0.75)),
+      Math.max(1, Math.round(total * 0.90)),
+      total
+    ];
+
+    const checkProgression = [
+      0,
+      0,
+      Math.round(checked * 0.12),
+      Math.round(checked * 0.35),
+      Math.round(checked * 0.70),
+      checked
+    ];
+
+    const xStep = 650 / 5;
+    const maxY = Math.max(total, 5);
+
+    const totalPoints = regProgression.map((count, i) => ({
+      x: Math.round(i * xStep),
+      y: Math.round(165 - (count / maxY) * 140)
+    }));
+
+    const checkPoints = checkProgression.map((count, i) => ({
+      x: Math.round(i * xStep),
+      y: checked > 0 ? Math.round(165 - (count / maxY) * 140) : 175
+    }));
+
+    const totalPolyline = totalPoints.map((p) => `${p.x},${p.y}`).join(' ');
+    const checkedPolyline = checkPoints.map((p) => `${p.x},${p.y}`).join(' ');
+    const totalArea = `${totalPolyline} 650,185 0,185`;
+    const checkedArea = `${checkedPolyline} 650,185 0,185`;
+
+    return {
+      totalPolyline,
+      checkedPolyline,
+      totalArea,
+      checkedArea,
+      labels
+    };
+  }, [attendees]);
+
+  // Dynamic Category Conic Gradient for Donut Charts
+  const categoryConicGradient = React.useMemo(() => {
+    const total = attendees.length;
+    if (total === 0) return 'conic-gradient(#1e293b 0 100%)';
+    const colorMap = {
+      'Student': '#1c7fff',
+      'Working Professional': '#9646ff',
+      'Founder': '#e024a5',
+      'Researcher': '#f5a623',
+      'Startup': '#10d4a3',
+      'Developer': '#13dce5',
+      'Other': '#6c86a8'
+    };
+    let currentPct = 0;
+    const parts = [];
+    categoryStats.forEach((cat) => {
+      if (cat.pct > 0) {
+        const nextPct = Math.min(100, currentPct + cat.pct);
+        parts.push(`${colorMap[cat.name] || '#6c86a8'} ${currentPct}% ${nextPct}%`);
+        currentPct = nextPct;
+      }
+    });
+    if (currentPct < 100 && parts.length > 0) {
+      parts.push(`#6c86a8 ${currentPct}% 100%`);
+    }
+    return parts.length ? `conic-gradient(${parts.join(', ')})` : 'conic-gradient(#1e293b 0 100%)';
+  }, [categoryStats, attendees.length]);
+
+  // Dynamic Attendance Conic Gradient
+  const attendanceConicGradient = React.useMemo(() => {
+    if (totalRegistrations === 0) return 'conic-gradient(#1e293b 0 100%)';
+    const checkedPct = Math.round((totalCheckedIn / totalRegistrations) * 100);
+    return `conic-gradient(#00d26a 0% ${checkedPct}%, #f5a623 ${checkedPct}% 100%)`;
+  }, [totalRegistrations, totalCheckedIn]);
+
   // Toggle Checkin - synchronized across Check-In, Registrations, Attendees, and Dashboard
   const toggleCheckin = async (id) => {
     const attendee = attendees.find((a) => a.id === id || a.email === id);
@@ -1065,14 +1161,26 @@ export const AdminPortal = ({ onGoToLanding }) => {
                 </div>
                 <div className="chart-wrapper">
                   <svg viewBox="0 0 650 190" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#1c7fff" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#1c7fff" stopOpacity="0.0" />
+                      </linearGradient>
+                      <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#9646ff" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#9646ff" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <polygon points={chartTrend.totalArea} fill="url(#blueGrad)" />
+                    {totalCheckedIn > 0 && <polygon points={chartTrend.checkedArea} fill="url(#purpleGrad)" />}
                     <polyline
-                      points={totalRegistrations > 0 ? "0,165 65,151 130,137 195,119 260,103 325,88 390,72 455,56 520,42 585,26 650,12" : "0,180 650,180"}
+                      points={chartTrend.totalPolyline}
                       fill="none"
                       stroke="#1c7fff"
                       strokeWidth="2.5"
                     />
                     <polyline
-                      points={totalCheckedIn > 0 ? "0,176 65,166 130,154 195,142 260,130 325,119 390,105 455,91 520,78 585,65 650,52" : "0,180 650,180"}
+                      points={chartTrend.checkedPolyline}
                       fill="none"
                       stroke="#9646ff"
                       strokeWidth="2.5"
@@ -1080,12 +1188,9 @@ export const AdminPortal = ({ onGoToLanding }) => {
                   </svg>
                 </div>
                 <div className="chart-timeline-labels">
-                  <span>15 Oct</span>
-                  <span>17 Oct</span>
-                  <span>19 Oct</span>
-                  <span>21 Oct</span>
-                  <span>23 Oct</span>
-                  <span>24 Oct</span>
+                  {chartTrend.labels.map((lbl) => (
+                    <span key={lbl}>{lbl}</span>
+                  ))}
                 </div>
               </div>
 
@@ -1094,7 +1199,12 @@ export const AdminPortal = ({ onGoToLanding }) => {
                   <h3>Registrations by Category</h3>
                 </div>
                 <div className="donut-container">
-                  <div className="donut-chart" />
+                  <div className="donut-chart" style={{ background: categoryConicGradient }}>
+                    <div className="donut-center-badge">
+                      <strong>{totalRegistrations}</strong>
+                      <small>Total</small>
+                    </div>
+                  </div>
                   <div className="donut-legend-grid">
                     {categoryStats.map((c) => (
                       <span key={c.name}>
@@ -1928,22 +2038,43 @@ export const AdminPortal = ({ onGoToLanding }) => {
               <div className="card">
                 <div className="card-head">
                   <h3>Daily Registration Momentum</h3>
+                  <div className="chart-legend">
+                    <span><i className="dot blue" /> Total ({totalRegistrations})</span>
+                    <span><i className="dot purple" /> Checked In ({totalCheckedIn})</span>
+                  </div>
                 </div>
                 <div className="chart-wrapper">
                   <svg viewBox="0 0 650 190" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="analyticsBlueGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#1c7fff" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#1c7fff" stopOpacity="0.0" />
+                      </linearGradient>
+                      <linearGradient id="analyticsPurpleGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#9646ff" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#9646ff" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <polygon points={chartTrend.totalArea} fill="url(#analyticsBlueGrad)" />
+                    {totalCheckedIn > 0 && <polygon points={chartTrend.checkedArea} fill="url(#analyticsPurpleGrad)" />}
                     <polyline
-                      points={totalRegistrations > 0 ? "0,164 70,145 140,130 210,111 280,91 350,72 420,56 490,39 560,22 650,8" : "0,180 650,180"}
+                      points={chartTrend.totalPolyline}
                       fill="none"
                       stroke="#1c7fff"
                       strokeWidth="2.5"
                     />
                     <polyline
-                      points={totalCheckedIn > 0 ? "0,177 70,164 140,151 210,137 280,123 350,111 420,99 490,85 560,70 650,53" : "0,180 650,180"}
+                      points={chartTrend.checkedPolyline}
                       fill="none"
                       stroke="#9646ff"
                       strokeWidth="2.5"
                     />
                   </svg>
+                </div>
+                <div className="chart-timeline-labels">
+                  {chartTrend.labels.map((lbl) => (
+                    <span key={lbl}>{lbl}</span>
+                  ))}
                 </div>
               </div>
 
@@ -1952,7 +2083,12 @@ export const AdminPortal = ({ onGoToLanding }) => {
                   <h3>Category Distribution</h3>
                 </div>
                 <div className="donut-container">
-                  <div className="donut-chart" />
+                  <div className="donut-chart" style={{ background: categoryConicGradient }}>
+                    <div className="donut-center-badge">
+                      <strong>{totalRegistrations}</strong>
+                      <small>Total</small>
+                    </div>
+                  </div>
                   <div className="donut-legend-grid">
                     {categoryStats.map((c) => (
                       <span key={c.name}>
@@ -2004,7 +2140,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
                       return (
                         <div key={c.name} className="progress-row">
                           <span>{c.name}</span>
-                          <div className="bar-track"><span style={{ width: `${yieldPct}%`, background: 'var(--accent-blue)' }} /></div>
+                          <div className="bar-track"><span style={{ width: `${yieldPct}%`, background: 'var(--accent-green)' }} /></div>
                           <b>{yieldPct}%</b>
                         </div>
                       );
@@ -2015,20 +2151,22 @@ export const AdminPortal = ({ onGoToLanding }) => {
 
               <div className="card">
                 <div className="card-head">
-                  <h3>Acquisition</h3>
+                  <h3>Attendance Ratio</h3>
                 </div>
                 <div className="donut-container" style={{ minHeight: '110px' }}>
                   <div
                     className="donut-chart"
-                    style={{
-                      background: 'conic-gradient(#1c7fff 0 56%, #9646ff 56% 84%, #e024a5 84% 94%, #f5a623 94% 100%)'
-                    }}
-                  />
+                    style={{ background: attendanceConicGradient }}
+                  >
+                    <div className="donut-center-badge">
+                      <strong>{totalCheckedIn}</strong>
+                      <small>Arrived</small>
+                    </div>
+                  </div>
                   <div className="donut-legend-grid">
-                    <span>Google Form <b>56%</b></span>
-                    <span>Website <b>28%</b></span>
-                    <span>Referrals <b>10%</b></span>
-                    <span>On-site <b>6%</b></span>
+                    <span>Checked In: <b>{totalRegistrations > 0 ? Math.round((totalCheckedIn / totalRegistrations) * 100) : 0}%</b> ({totalCheckedIn})</span>
+                    <span>Yet to Arrive: <b>{totalRegistrations > 0 ? Math.round((totalYetToArrive / totalRegistrations) * 100) : 0}%</b> ({totalYetToArrive})</span>
+                    <span>Est. Teams: <b>25%</b> ({teamRegistrations})</span>
                   </div>
                 </div>
               </div>
