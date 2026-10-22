@@ -19,7 +19,8 @@ import {
   Check,
   Shield,
   Users,
-  Sparkles
+  Sparkles,
+  Globe
 } from 'lucide-react';
 import './NonAdminPortal.css';
 
@@ -246,6 +247,17 @@ export const NonAdminPortal = () => {
                 <Users size={13} />
                 <span>Staff & Attendee View</span>
               </button>
+              <a
+                href="/landing"
+                className="role-segment-btn"
+                title="View Public Event Landing Page"
+                target="_blank"
+                rel="noreferrer"
+                style={{ textDecoration: 'none' }}
+              >
+                <Globe size={13} />
+                <span>Landing Page</span>
+              </a>
             </div>
 
             <div className="topbar-meta-item">

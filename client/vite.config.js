@@ -11,6 +11,16 @@ export default defineConfig({
         target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false
+      },
+      '/landing': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false
+      },
+      '/static': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false
       }
     }
   }

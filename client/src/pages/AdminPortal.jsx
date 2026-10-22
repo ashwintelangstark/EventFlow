@@ -27,7 +27,8 @@ import {
   Trash2,
   Plus,
   X,
-  Check
+  Check,
+  Globe
 } from 'lucide-react';
 import './AdminPortal.css';
 
@@ -721,6 +722,17 @@ export const AdminPortal = () => {
                 <Users size={12} />
                 <span>Staff & Attendee View</span>
               </button>
+              <a
+                href="/landing"
+                className="role-segment-btn"
+                title="View Public Event Landing Page"
+                target="_blank"
+                rel="noreferrer"
+                style={{ textDecoration: 'none' }}
+              >
+                <Globe size={12} />
+                <span>Landing Page</span>
+              </a>
             </div>
 
             <div className="meta-box">

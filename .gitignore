@@ -40,3 +40,4 @@ pnpm-debug.log*
 .meta-panel-trigger
 meta.bat
 meta
+*.zip

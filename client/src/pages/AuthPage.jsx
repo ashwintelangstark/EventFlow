@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Calendar,
@@ -13,6 +13,8 @@ import {
   EyeOff,
   UserCheck,
   ArrowRight,
+  ArrowLeft,
+  Globe,
   ShieldAlert,
   Sparkles
 } from 'lucide-react';
@@ -20,7 +22,63 @@ import './AuthPage.css';
 
 export const AuthPage = () => {
   const { login, signup, quickLogin, loading } = useAuth();
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  
+  // Initialize mode from URL params (?mode=signup, ?register=true, or hash #register)
+  const [mode, setMode] = useState(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlMode = searchParams.get('mode') || searchParams.get('tab');
+      if (
+        urlMode === 'signup' ||
+        urlMode === 'register' ||
+        searchParams.get('register') === 'true' ||
+        window.location.hash === '#signup' ||
+        window.location.hash === '#register'
+      ) {
+        return 'signup';
+      }
+    } catch {}
+    return 'login';
+  });
+
+  // Keep state in sync with URL changes & browser history
+  useEffect(() => {
+    const syncFromUrl = () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const urlMode = searchParams.get('mode') || searchParams.get('tab');
+        if (
+          urlMode === 'signup' ||
+          urlMode === 'register' ||
+          searchParams.get('register') === 'true' ||
+          window.location.hash === '#signup' ||
+          window.location.hash === '#register'
+        ) {
+          setMode('signup');
+        } else if (urlMode === 'login' || window.location.hash === '#login') {
+          setMode('login');
+        }
+      } catch {}
+    };
+
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    window.addEventListener('hashchange', syncFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncFromUrl);
+      window.removeEventListener('hashchange', syncFromUrl);
+    };
+  }, []);
+
+  const handleTabChange = (nextMode) => {
+    setMode(nextMode);
+    setError('');
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', nextMode);
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+  };
 
   // Form states
   const [email, setEmail] = useState('');
@@ -190,23 +248,50 @@ export const AuthPage = () => {
         {/* RIGHT COLUMN: AUTH CARD */}
         <div className="auth-card-wrap">
           <div className="auth-card">
-            {/* Tab Switcher: Login / Sign Up */}
+            {/* Top Bar with Landing Page Navigation */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 600 }}>
+                EventFlow Portal
+              </span>
+              <a
+                href="/landing"
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--accent-cyan)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  textDecoration: 'none',
+                  padding: '4px 8px',
+                  borderRadius: 'var(--radius-xs)',
+                  background: 'rgba(19, 220, 229, 0.08)',
+                  border: '1px solid rgba(19, 220, 229, 0.2)',
+                  transition: 'all 0.2s ease'
+                }}
+                title="View full event landing page"
+              >
+                <ArrowLeft size={12} />
+                <span>Event Landing Page</span>
+              </a>
+            </div>
+
+            {/* Tab Switcher: Sign In / Register */}
             <div className="auth-tabs">
               <button
                 type="button"
                 className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
-                onClick={() => { setMode('login'); setError(''); }}
+                onClick={() => handleTabChange('login')}
               >
                 <UserCheck size={16} />
-                <span>Login</span>
+                <span>Sign In</span>
               </button>
               <button
                 type="button"
                 className={`auth-tab ${mode === 'signup' ? 'active' : ''}`}
-                onClick={() => { setMode('signup'); setError(''); }}
+                onClick={() => handleTabChange('signup')}
               >
                 <Sparkles size={16} />
-                <span>Sign Up</span>
+                <span>Register</span>
               </button>
             </div>
 
@@ -318,8 +403,8 @@ export const AuthPage = () => {
 
                 <div className="form-footer-link">
                   <span>Don't have an account?</span>{' '}
-                  <button type="button" className="text-link" onClick={() => setMode('signup')}>
-                    Sign Up
+                  <button type="button" className="text-link" onClick={() => handleTabChange('signup')}>
+                    Register / Sign Up
                   </button>
                 </div>
               </form>
@@ -426,8 +511,8 @@ export const AuthPage = () => {
 
                 <div className="form-footer-link">
                   <span>Already have an account?</span>{' '}
-                  <button type="button" className="text-link" onClick={() => setMode('login')}>
-                    Login
+                  <button type="button" className="text-link" onClick={() => handleTabChange('login')}>
+                    Sign In
                   </button>
                 </div>
               </form>
