@@ -26,6 +26,7 @@ import {
   Building2
 } from 'lucide-react';
 import './NonAdminPortal.css';
+import { downloadEventFlowAsImage } from '../utils/downloadScheduleImage';
 
 const DEFAULT_STAGES = [
   {
@@ -862,11 +863,23 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
         {/* ================= TAB 4: EVENT FLOW ================= */}
         {activeTab === 'eventflow' && (
           <section className="portal-tab-content" key="eventflow">
-            <div className="welcome-section" style={{ marginBottom: '16px' }}>
-              <h1 className="portal-heading">
-                Event Flow <span className="pill pill-cyan">Agenda</span>
-              </h1>
-              <p className="portal-sub">Chronological itinerary and schedule breakdown based on the official event program.</p>
+            <div className="welcome-section" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h1 className="portal-heading">
+                  Event Flow <span className="pill pill-cyan">Agenda</span>
+                </h1>
+                <p className="portal-sub">Chronological itinerary and schedule breakdown based on the official event program.</p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => downloadEventFlowAsImage(eventStages)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 14px', fontSize: '12px' }}
+                title="Download complete schedule as high-resolution image"
+              >
+                <Download size={15} />
+                <span>Download Flow as Image</span>
+              </button>
             </div>
 
             {/* Stepper Header with 9 Official Stages */}

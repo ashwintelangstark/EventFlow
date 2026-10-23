@@ -713,5 +713,42 @@ export const api = {
     } catch {}
 
     return { success: true };
+  },
+
+  // 9. Auth: Password Reset Request
+  async requestPasswordReset(email) {
+    const cleanEmail = (email || '').toLowerCase().trim();
+    if (!cleanEmail) throw new Error('Please enter your registered email address.');
+
+    if (isSupabaseDirectReady && supabase) {
+      const redirectUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/?mode=reset`
+        : 'https://events.datadice.in/?mode=reset';
+
+      const { data, error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: redirectUrl
+      });
+      if (error) throw new Error(error.message);
+      return { success: true, message: 'Password reset link sent to your email.' };
+    }
+
+    throw new Error('Database service is currently unavailable.');
+  },
+
+  // 10. Auth: Set New Password
+  async updateUserPassword(newPassword) {
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+
+    if (isSupabaseDirectReady && supabase) {
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      if (error) throw new Error(error.message);
+      return { success: true, user: data.user };
+    }
+
+    throw new Error('Database service is currently unavailable.');
   }
 };

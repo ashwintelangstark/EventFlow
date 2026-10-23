@@ -21,14 +21,17 @@ import {
   User,
   Phone,
   Building,
-  Briefcase
+  Briefcase,
+  KeyRound,
+  CheckCircle2
 } from 'lucide-react';
+import { supabase } from '../supabase';
 import './AuthPage.css';
 
 export const AuthPage = ({ onBackToLanding }) => {
-  const { login, signup, loading } = useAuth();
+  const { login, signup, loading, requestPasswordReset, updateUserPassword } = useAuth();
   
-  // Initialize mode from URL params (?mode=signup, ?register=true, or hash #register)
+  // Initialize mode from URL params (?mode=signup, ?register=true, ?mode=forgot, or hash #register)
   const [mode, setMode] = useState(() => {
     try {
       const searchParams = new URLSearchParams(window.location.search);
@@ -41,6 +44,17 @@ export const AuthPage = ({ onBackToLanding }) => {
         window.location.hash === '#register'
       ) {
         return 'signup';
+      }
+      if (urlMode === 'forgot' || window.location.hash === '#forgot') {
+        return 'forgot';
+      }
+      if (
+        urlMode === 'reset' ||
+        window.location.hash.includes('type=recovery') ||
+        searchParams.get('type') === 'recovery' ||
+        window.location.hash === '#reset'
+      ) {
+        return 'reset';
       }
     } catch {}
     return 'login';
@@ -60,6 +74,15 @@ export const AuthPage = ({ onBackToLanding }) => {
           window.location.hash === '#register'
         ) {
           setMode('signup');
+        } else if (urlMode === 'forgot' || window.location.hash === '#forgot') {
+          setMode('forgot');
+        } else if (
+          urlMode === 'reset' ||
+          window.location.hash.includes('type=recovery') ||
+          searchParams.get('type') === 'recovery' ||
+          window.location.hash === '#reset'
+        ) {
+          setMode('reset');
         } else if (urlMode === 'login' || window.location.hash === '#login') {
           setMode('login');
         }
@@ -73,6 +96,20 @@ export const AuthPage = ({ onBackToLanding }) => {
       window.removeEventListener('popstate', syncFromUrl);
       window.removeEventListener('hashchange', syncFromUrl);
     };
+  }, []);
+
+  // Listen for Supabase password recovery event
+  useEffect(() => {
+    if (supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setMode('reset');
+          setError('');
+          setSuccessMsg('Password recovery verified. Please enter your new password below.');
+        }
+      });
+      return () => subscription?.unsubscribe();
+    }
   }, []);
 
   const videoRef = useRef(null);
@@ -91,6 +128,7 @@ export const AuthPage = ({ onBackToLanding }) => {
   const handleTabChange = (nextMode) => {
     setMode(nextMode);
     setError('');
+    setSuccessMsg('');
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('mode', nextMode);
@@ -106,17 +144,23 @@ export const AuthPage = ({ onBackToLanding }) => {
   const [designation, setDesignation] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
   const [roleCategory, setRoleCategory] = useState('Student');
   const [rememberMe, setRememberMe] = useState(true);
   const [agreed, setAgreed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     try {
       await login(email, password);
     } catch (err) {
@@ -127,6 +171,7 @@ export const AuthPage = ({ onBackToLanding }) => {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -151,6 +196,56 @@ export const AuthPage = ({ onBackToLanding }) => {
       setSuccessMsg('Account created successfully! Redirecting...');
     } catch (err) {
       setError(err.message || 'Signup failed');
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMsg('');
+    const targetEmail = (forgotEmail || email || '').trim();
+    if (!targetEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await requestPasswordReset(targetEmail);
+      setSuccessMsg(`✓ Password reset email sent! Please check your inbox at ${targetEmail} (and spam folder) for the reset link.`);
+    } catch (err) {
+      setError(err.message || 'Failed to send password reset email. Please verify the email address.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSetNewPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMsg('');
+
+    if (!newPassword || newPassword.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError('New passwords do not match.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateUserPassword(newPassword);
+      setSuccessMsg('✓ Password updated successfully! Please log in with your new password.');
+      setPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      handleTabChange('login');
+    } catch (err) {
+      setError(err.message || 'Failed to update password. Your reset session may have expired.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -296,7 +391,7 @@ export const AuthPage = ({ onBackToLanding }) => {
               </button>
             </div>
 
-            {/* Tab Switcher: Sign In / Register */}
+            {/* Tab Switcher: Sign In / Register / Reset */}
             <div className="auth-tabs">
               <button
                 type="button"
@@ -314,6 +409,16 @@ export const AuthPage = ({ onBackToLanding }) => {
                 <Sparkles size={16} />
                 <span>Register</span>
               </button>
+              {(mode === 'forgot' || mode === 'reset') && (
+                <button
+                  type="button"
+                  className="auth-tab active"
+                  style={{ cursor: 'default' }}
+                >
+                  <KeyRound size={16} />
+                  <span>{mode === 'reset' ? 'New Password' : 'Reset'}</span>
+                </button>
+              )}
             </div>
 
             {/* Error / Success alert */}
@@ -324,7 +429,8 @@ export const AuthPage = ({ onBackToLanding }) => {
               </div>
             )}
             {successMsg && (
-              <div className="auth-alert success">
+              <div className="auth-alert success" style={{ background: 'rgba(16, 212, 163, 0.15)', border: '1px solid rgba(16, 212, 163, 0.4)', color: '#10d4a3' }}>
+                <CheckCircle2 size={16} />
                 <span>{successMsg}</span>
               </div>
             )}
@@ -381,7 +487,14 @@ export const AuthPage = ({ onBackToLanding }) => {
                     />
                     <span>Remember me</span>
                   </label>
-                  <button type="button" className="link-btn" onClick={() => alert('Password reset instructions will be sent to your registered email address.')}>
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => {
+                      setForgotEmail(email);
+                      handleTabChange('forgot');
+                    }}
+                  >
                     Forgot password?
                   </button>
                 </div>
@@ -565,6 +678,97 @@ export const AuthPage = ({ onBackToLanding }) => {
                   <span>Already have an account?</span>{' '}
                   <button type="button" className="text-link" onClick={() => handleTabChange('login')}>
                     Sign In
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ================= FORGOT PASSWORD FORM ================= */}
+            {mode === 'forgot' && (
+              <form onSubmit={handleForgotPassword} className="auth-form">
+                <div className="form-header">
+                  <h2>Reset Password</h2>
+                  <p>Enter your registered email address and we will send you a secure password reset link.</p>
+                </div>
+
+                <div className="input-group">
+                  <label>Email Address <span className="req">*</span></label>
+                  <div className="input-field">
+                    <Mail size={17} className="field-icon" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="Enter your registered email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary btn-full submit-btn" disabled={isSubmitting}>
+                  <span>{isSubmitting ? 'Sending Reset Link...' : 'Send Password Reset Link'}</span>
+                  <ArrowRight size={16} />
+                </button>
+
+                <div className="form-footer-link" style={{ textAlign: 'center', marginTop: '14px' }}>
+                  <button type="button" className="text-link" onClick={() => handleTabChange('login')}>
+                    ← Back to Sign In
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ================= SET NEW PASSWORD FORM ================= */}
+            {mode === 'reset' && (
+              <form onSubmit={handleSetNewPassword} className="auth-form">
+                <div className="form-header">
+                  <h2>Set New Password</h2>
+                  <p>Enter your new password below to secure and update your account.</p>
+                </div>
+
+                <div className="input-group">
+                  <label>New Password <span className="req">*</span></label>
+                  <div className="input-field">
+                    <Lock size={17} className="field-icon" />
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      placeholder="At least 6 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="eye-btn"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label>Confirm New Password <span className="req">*</span></label>
+                  <div className="input-field">
+                    <Lock size={17} className="field-icon" />
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      placeholder="Re-enter your new password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary btn-full submit-btn" disabled={isSubmitting}>
+                  <span>{isSubmitting ? 'Updating Password...' : 'Save New Password'}</span>
+                  <ArrowRight size={16} />
+                </button>
+
+                <div className="form-footer-link" style={{ textAlign: 'center', marginTop: '14px' }}>
+                  <button type="button" className="text-link" onClick={() => handleTabChange('login')}>
+                    ← Back to Sign In
                   </button>
                 </div>
               </form>

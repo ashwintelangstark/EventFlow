@@ -49,6 +49,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('eventflow_session');
   };
 
+  const requestPasswordReset = async (email) => {
+    return await api.requestPasswordReset(email);
+  };
+
+  const updateUserPassword = async (newPassword) => {
+    return await api.updateUserPassword(newPassword);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -58,7 +66,9 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         signup,
-        logout
+        logout,
+        requestPasswordReset,
+        updateUserPassword
       }}
     >
       {children}

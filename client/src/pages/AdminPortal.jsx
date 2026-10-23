@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { downloadEventFlowAsImage } from '../utils/downloadScheduleImage';
 import {
   Home,
   UserPlus,
@@ -2389,26 +2390,38 @@ export const AdminPortal = ({ onGoToLanding }) => {
             <div className="layout-two-pane" style={{ marginTop: '10px' }}>
               {/* Detailed Agenda Cards with Admin Edit & Delete Actions */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
                   <h3 style={{ fontSize: '13px' }}>Agenda Stages ({stages.length})</h3>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    style={{ padding: '4px 10px', fontSize: '11px' }}
-                    onClick={() => {
-                      setEditingStage({
-                        stage: stages.length + 1,
-                        title: '',
-                        time: '',
-                        description: '',
-                        activities: []
-                      });
-                      setIsNewStage(true);
-                    }}
-                  >
-                    <Plus size={13} />
-                    <span>Add Stage</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                      onClick={() => downloadEventFlowAsImage(stages)}
+                      title="Download complete schedule as high-resolution image"
+                    >
+                      <Download size={13} />
+                      <span>Download Flow Image</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ padding: '4px 10px', fontSize: '11px' }}
+                      onClick={() => {
+                        setEditingStage({
+                          stage: stages.length + 1,
+                          title: '',
+                          time: '',
+                          description: '',
+                          activities: []
+                        });
+                        setIsNewStage(true);
+                      }}
+                    >
+                      <Plus size={13} />
+                      <span>Add Stage</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flow-card-stack">
