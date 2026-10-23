@@ -214,7 +214,10 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
               organization: found.organization || prev.organization,
               designation: found.designation || prev.designation,
               department: found.department || prev.department,
-              category: found.category || prev.category
+              category: found.category || prev.category,
+              diet: found.dietaryPreference || prev.diet,
+              interests: (Array.isArray(found.areasOfInterest) && found.areasOfInterest.length > 0) ? found.areasOfInterest : prev.interests,
+              extra: found.notes || prev.extra
             }));
           } else {
             setMyPass(null);
@@ -285,6 +288,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
 
     setIsSubmitting(true);
     const regPayload = {
+      userId: user?.id || null,
       name: selfForm.fullName.trim(),
       email: selfForm.email.trim().toLowerCase(),
       phone: selfForm.phone.trim(),
@@ -313,8 +317,7 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
       await refreshData();
     } catch (err) {
       console.error('Registration submission error:', err);
-      setMyPass({ ...regPayload, status: 'Registered' });
-      showToast(`Registration recorded! You are now registered, ${selfForm.fullName}.`);
+      showToast(`Registration failed: ${err.message || 'Please check your connection and try again.'}`);
     } finally {
       setIsSubmitting(false);
     }

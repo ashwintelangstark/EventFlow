@@ -6,12 +6,7 @@
   RewriteCond %{HTTPS} !=on
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-  # 2. Proxy /api requests to local Node.js backend port 5001 (if mod_proxy is active)
-  <IfModule mod_proxy.c>
-    RewriteRule ^api/(.*)$ http://127.0.0.1:5001/api/$1 [P,L]
-  </IfModule>
-
-  # 3. Serve existing files and directories directly (landing page, assets, videos, images)
+  # 2. Serve existing files and directories directly (landing page, assets, videos, images)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]

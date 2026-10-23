@@ -1,7 +1,21 @@
-// Central API Service connecting directly to EventFlow Backend & Supabase Database
+// Central API Service connecting directly to Supabase Database & EventFlow Backend
 import { supabase, isSupabaseDirectReady } from '../supabase.js';
 
 const API_BASE = '/api';
+
+// Safe fetch with short timeout so unconfigured backend proxies on Apache/Hostinger never hang
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 1800) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+};
 
 // Format helper for user object
 const formatUser = (authUser, profile = {}) => {
@@ -58,9 +72,37 @@ export const api = {
   // 1. Auth: Login
   async login(email, password) {
     const cleanEmail = (email || '').toLowerCase().trim();
-    // Try Backend API First
+
+    // Direct Supabase Primary
+    if (isSupabaseDirectReady && supabase) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password
+        });
+        if (error) throw new Error(error.message);
+
+        let profile = null;
+        try {
+          const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+          profile = prof;
+        } catch {}
+
+        return {
+          user: formatUser(data.user, profile),
+          token: data.session?.access_token || 'authenticated'
+        };
+      } catch (err) {
+        if (err.message && (err.message.toLowerCase().includes('invalid') || err.message.toLowerCase().includes('credential'))) {
+          throw err;
+        }
+        console.warn('Direct Supabase auth note:', err.message);
+      }
+    }
+
+    // Backend API Fallback
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetchWithTimeout(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cleanEmail, password })
@@ -76,27 +118,7 @@ export const api = {
       if (err.message && err.message.toLowerCase().includes('invalid')) {
         throw err;
       }
-      console.warn('Backend API login unavailable, falling back to direct Supabase auth:', err.message);
-    }
-
-    // Direct Supabase Fallback
-    if (isSupabaseDirectReady && supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password
-      });
-      if (error) throw new Error(error.message);
-
-      let profile = null;
-      try {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-        profile = prof;
-      } catch {}
-
-      return {
-        user: formatUser(data.user, profile),
-        token: data.session?.access_token || 'authenticated'
-      };
+      console.warn('Backend API login unavailable:', err.message);
     }
 
     throw new Error('Database connection failed. Please check your credentials.');
@@ -107,10 +129,73 @@ export const api = {
     const cleanEmail = (payload?.email || '').toLowerCase().trim();
     const systemRole = cleanEmail === 'admin@gmail.com' ? 'admin' : 'staff';
     const displayName = payload.name || cleanEmail.split('@')[0];
+    const cleanPhone = (payload.phone || '').trim();
+    const cleanOrg = (payload.organization || '').trim() || 'Alliance University';
+    const cleanDesig = (payload.designation || '').trim() || 'Participant';
+    const cleanCat = payload.category || 'Student';
 
-    // Try Backend API First
+    // Direct Supabase Primary
+    if (isSupabaseDirectReady && supabase) {
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: payload.password,
+          options: {
+            data: {
+              name: displayName,
+              role: systemRole,
+              phone: cleanPhone,
+              category: cleanCat,
+              organization: cleanOrg,
+              designation: cleanDesig
+            }
+          }
+        });
+        if (error) {
+          if (error.message?.toLowerCase().includes('already')) {
+            throw new Error('An account with this email already exists');
+          }
+          throw new Error(error.message);
+        }
+
+        if (data.user) {
+          try {
+            await supabase.from('profiles').upsert({
+              id: data.user.id,
+              full_name: displayName,
+              role: systemRole,
+              phone: cleanPhone,
+              category: cleanCat,
+              organization: cleanOrg,
+              designation: cleanDesig
+            });
+          } catch (dbErr) {
+            console.warn('Direct profile sync note:', dbErr);
+          }
+        }
+
+        return {
+          user: formatUser(data.user, {
+            full_name: displayName,
+            role: systemRole,
+            phone: cleanPhone,
+            category: cleanCat,
+            organization: cleanOrg,
+            designation: cleanDesig
+          }),
+          token: data.session?.access_token || 'confirmed'
+        };
+      } catch (err) {
+        if (err.message && (err.message.toLowerCase().includes('already') || err.message.toLowerCase().includes('password'))) {
+          throw err;
+        }
+        console.warn('Direct Supabase signup note:', err.message);
+      }
+    }
+
+    // Backend API Fallback
     try {
-      const res = await fetch(`${API_BASE}/auth/signup`, {
+      const res = await fetchWithTimeout(`${API_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, email: cleanEmail })
@@ -126,86 +211,79 @@ export const api = {
       if (err.message && err.message.toLowerCase().includes('already')) {
         throw err;
       }
-      console.warn('Backend API signup unavailable, falling back to direct Supabase auth:', err.message);
-    }
-
-    // Direct Supabase Fallback
-    if (isSupabaseDirectReady && supabase) {
-      const cleanPhone = (payload.phone || '').trim();
-      const cleanOrg = (payload.organization || '').trim() || 'Alliance University';
-      const cleanDesig = (payload.designation || '').trim() || 'Participant';
-      const cleanCat = payload.category || 'Student';
-
-      const { data, error } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password: payload.password,
-        options: {
-          data: {
-            name: displayName,
-            role: systemRole,
-            phone: cleanPhone,
-            category: cleanCat,
-            organization: cleanOrg,
-            designation: cleanDesig
-          }
-        }
-      });
-      if (error) throw new Error(error.message);
-
-      if (data.user) {
-        try {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            full_name: displayName,
-            role: systemRole,
-            phone: cleanPhone,
-            category: cleanCat,
-            organization: cleanOrg,
-            designation: cleanDesig
-          });
-        } catch (dbErr) {
-          console.warn('Direct profile sync note:', dbErr);
-        }
-      }
-
-      return {
-        user: formatUser(data.user, {
-          full_name: displayName,
-          role: systemRole,
-          phone: cleanPhone,
-          category: cleanCat,
-          organization: cleanOrg,
-          designation: cleanDesig
-        }),
-        token: data.session?.access_token || 'confirmed'
-      };
+      console.warn('Backend API signup unavailable:', err.message);
     }
 
     throw new Error('Database signup failed. Please try again.');
   },
 
   async getMe(token) {
+    if (isSupabaseDirectReady && supabase) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          let profile = null;
+          try {
+            const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            profile = prof;
+          } catch {}
+          return { user: formatUser(user, profile) };
+        }
+      } catch {}
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/auth/me`, {
+      const res = await fetchWithTimeout(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        return { user: formatUser(user) };
-      }
-    }
     throw new Error('Session invalid');
   },
 
   // 3. Registrations: List
   async getRegistrations(params = {}) {
+    // Direct Supabase Primary
+    if (isSupabaseDirectReady && supabase) {
+      try {
+        let query = supabase
+          .from('registrations')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (params.category && params.category !== 'All Categories') {
+          query = query.eq('category', params.category);
+        }
+        if (params.status && params.status !== 'All Status') {
+          query = query.eq('status', params.status);
+        }
+
+        const { data, error } = await query;
+        if (!error && Array.isArray(data)) {
+          let list = data.map(formatAttendee);
+          if (params.q) {
+            const q = params.q.toLowerCase().trim();
+            list = list.filter((a) =>
+              [a.name, a.email, a.phone, a.organization, a.category, a.id]
+                .filter(Boolean)
+                .some((val) => String(val).toLowerCase().includes(q))
+            );
+          }
+          return {
+            total: list.length,
+            attendees: list
+          };
+        }
+      } catch (sbErr) {
+        console.warn('Direct Supabase registrations note:', sbErr.message);
+      }
+    }
+
+    // Backend API Fallback
     const qs = new URLSearchParams(params).toString();
     try {
-      const res = await fetch(`${API_BASE}/registrations?${qs}`);
+      const res = await fetchWithTimeout(`${API_BASE}/registrations?${qs}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.attendees)) return data;
@@ -214,34 +292,11 @@ export const api = {
       console.warn('Backend API registrations fetch note:', err.message);
     }
 
-    // Direct Supabase Fallback
-    if (isSupabaseDirectReady && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('registrations')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (!error && Array.isArray(data)) {
-          return {
-            total: data.length,
-            attendees: data.map(formatAttendee)
-          };
-        }
-      } catch (sbErr) {
-        console.warn('Direct Supabase registrations note:', sbErr.message);
-      }
-    }
-
     return { total: 0, attendees: [] };
   },
 
   // 4. Registrations: Stats
   async getRegistrationStats() {
-    try {
-      const res = await fetch(`${API_BASE}/registrations/stats`);
-      if (res.ok) return await res.json();
-    } catch {}
-
     if (isSupabaseDirectReady && supabase) {
       try {
         const { data, error } = await supabase.from('registrations').select('*');
@@ -267,20 +322,17 @@ export const api = {
       } catch {}
     }
 
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/registrations/stats`);
+      if (res.ok) return await res.json();
+    } catch {}
+
     return { totalRegistrations: 0, checkedIn: 0, yetToArrive: 0, teamRegistrations: 0, categories: {} };
   },
 
   // 5. Registrations: Add
   async addRegistration(payload) {
-    try {
-      const res = await fetch(`${API_BASE}/registrations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) return await res.json();
-    } catch {}
-
+    // Direct Supabase Primary
     if (isSupabaseDirectReady && supabase) {
       const cleanEmail = (payload.email || '').toLowerCase().trim();
       const row = {
@@ -297,6 +349,9 @@ export const api = {
         status: payload.status || 'Registered',
         created_at: new Date().toISOString()
       };
+      if (payload.userId || payload.user_id) {
+        row.user_id = payload.userId || payload.user_id;
+      }
 
       try {
         const { data: existing } = await supabase
@@ -315,22 +370,58 @@ export const api = {
             .eq('id', existing[0].id)
             .select()
             .single();
-          if (!error && data) return { attendee: formatAttendee(data) };
+          if (error) throw error;
+          if (data) return { attendee: formatAttendee(data) };
         } else {
-          const { data, error } = await supabase.from('registrations').insert(row).select().single();
-          if (!error && data) return { attendee: formatAttendee(data) };
+          const { data, error } = await supabase
+            .from('registrations')
+            .insert(row)
+            .select()
+            .single();
+          if (error) throw error;
+          if (data) return { attendee: formatAttendee(data) };
         }
       } catch (sbErr) {
-        console.warn('Direct supabase registration error:', sbErr);
+        console.error('Direct supabase registration error:', sbErr);
+        throw sbErr;
       }
+    }
+
+    // Backend API Fallback
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/registrations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('Backend API registration fallback failed:', err.message);
+      throw err;
     }
 
     return { success: true };
   },
 
   async importBatchRegistrations(rows) {
+    if (isSupabaseDirectReady && supabase) {
+      const formatted = rows.map((r) => ({
+        full_name: r.name || r.fullName,
+        email: (r.email || '').toLowerCase().trim(),
+        phone: (r.phone || '').trim(),
+        category: r.category || 'Student',
+        organization: (r.organization || '').trim() || 'Alliance University',
+        designation: (r.designation || '').trim() || 'Participant',
+        status: r.status || 'Registered',
+        created_at: new Date().toISOString()
+      }));
+      const { error } = await supabase.from('registrations').insert(formatted);
+      if (error) throw error;
+      return { success: true, count: formatted.length };
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/registrations/batch`, {
+      const res = await fetchWithTimeout(`${API_BASE}/registrations/batch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rows })
@@ -338,28 +429,28 @@ export const api = {
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      const formatted = rows.map((r) => ({
-        full_name: r.name || r.fullName,
-        email: r.email,
-        phone: r.phone || '',
-        category: r.category || 'Student',
-        organization: r.organization || 'Alliance University',
-        designation: r.designation || 'Participant',
-        status: 'Registered',
-        created_at: new Date().toISOString()
-      }));
-      await supabase.from('registrations').insert(formatted);
-      return { success: true, count: formatted.length };
-    }
-
     return { success: true };
   },
 
   // 6. Registrations: Check-in toggle
   async toggleCheckIn(id, status) {
+    if (isSupabaseDirectReady && supabase) {
+      const updateData = {
+        status,
+        checked_in_at: status === 'Checked In' ? new Date().toISOString() : null
+      };
+      const { data, error } = await supabase
+        .from('registrations')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) return { attendee: formatAttendee(data) };
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/registrations/${id}/checkin`, {
+      const res = await fetchWithTimeout(`${API_BASE}/registrations/${id}/checkin`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -367,34 +458,14 @@ export const api = {
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      const updateData = {
-        status,
-        checked_in_at: status === 'Checked In' ? new Date().toISOString() : null
-      };
-      const { data, error } = await supabase.from('registrations').update(updateData).eq('id', id).select().single();
-      if (!error && data) return { attendee: formatAttendee(data) };
-    }
-
     return { success: true };
   },
 
   async updateRegistration(id, payload) {
-    try {
-      const res = await fetch(`${API_BASE}/registrations/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) return await res.json();
-    } catch (err) {
-      console.warn('Backend API update registration fallback:', err.message);
-    }
-
     if (isSupabaseDirectReady && supabase) {
       const updateData = {};
       if (payload.name !== undefined) updateData.full_name = payload.name;
-      if (payload.email !== undefined) updateData.email = payload.email;
+      if (payload.email !== undefined) updateData.email = payload.email.toLowerCase().trim();
       if (payload.phone !== undefined) updateData.phone = payload.phone;
       if (payload.category !== undefined) updateData.category = payload.category;
       if (payload.organization !== undefined) updateData.organization = payload.organization;
@@ -415,38 +486,47 @@ export const api = {
         .eq('id', id)
         .select()
         .single();
-      if (!error && data) return { attendee: formatAttendee(data) };
+      if (error) throw error;
+      if (data) return { attendee: formatAttendee(data) };
+    }
+
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/registrations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('Backend API update registration fallback:', err.message);
     }
 
     return { success: true };
   },
 
   async deleteRegistration(id) {
+    if (isSupabaseDirectReady && supabase) {
+      const { error } = await supabase.from('registrations').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/registrations/${id}`, { method: 'DELETE' });
+      const res = await fetchWithTimeout(`${API_BASE}/registrations/${id}`, { method: 'DELETE' });
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      await supabase.from('registrations').delete().eq('id', id);
-    }
     return { success: true };
   },
 
   // 7. Announcements
   async getAnnouncements(params = {}) {
-    const qs = new URLSearchParams(params).toString();
-    try {
-      const res = await fetch(`${API_BASE}/announcements?${qs}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.announcements)) return data;
-      }
-    } catch {}
-
     if (isSupabaseDirectReady && supabase) {
       try {
-        const { data, error } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('announcements')
+          .select('*')
+          .order('created_at', { ascending: false });
         if (!error && Array.isArray(data)) {
           return {
             total: data.length,
@@ -463,12 +543,33 @@ export const api = {
       } catch {}
     }
 
+    const qs = new URLSearchParams(params).toString();
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/announcements?${qs}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.announcements)) return data;
+      }
+    } catch {}
+
     return { total: 0, announcements: [] };
   },
 
   async createAnnouncement(payload) {
+    if (isSupabaseDirectReady && supabase) {
+      const { data, error } = await supabase.from('announcements').insert({
+        title: payload.title,
+        message: payload.message,
+        type: payload.type || 'General',
+        status: payload.status || 'Published',
+        created_at: new Date().toISOString()
+      }).select().single();
+      if (error) throw error;
+      if (data) return { announcement: data };
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/announcements`, {
+      const res = await fetchWithTimeout(`${API_BASE}/announcements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -476,23 +577,18 @@ export const api = {
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      const { data } = await supabase.from('announcements').insert({
-        title: payload.title,
-        message: payload.message,
-        type: payload.type || 'General',
-        status: payload.status || 'Published',
-        created_at: new Date().toISOString()
-      }).select().single();
-      if (data) return { announcement: data };
-    }
-
     return { success: true };
   },
 
   async updateAnnouncement(id, payload) {
+    if (isSupabaseDirectReady && supabase) {
+      const { error } = await supabase.from('announcements').update(payload).eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/announcements/${id}`, {
+      const res = await fetchWithTimeout(`${API_BASE}/announcements/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -500,37 +596,32 @@ export const api = {
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      await supabase.from('announcements').update(payload).eq('id', id);
-    }
     return { success: true };
   },
 
   async deleteAnnouncement(id) {
+    if (isSupabaseDirectReady && supabase) {
+      const { error } = await supabase.from('announcements').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/announcements/${id}`, { method: 'DELETE' });
+      const res = await fetchWithTimeout(`${API_BASE}/announcements/${id}`, { method: 'DELETE' });
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      await supabase.from('announcements').delete().eq('id', id);
-    }
     return { success: true };
   },
 
   // 8. Event Flow (Agenda & Stages)
   async getEventFlow() {
-    try {
-      const res = await fetch(`${API_BASE}/eventflow`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.stages) && data.stages.length > 0) return data;
-      }
-    } catch {}
-
     if (isSupabaseDirectReady && supabase) {
       try {
-        const { data, error } = await supabase.from('event_sessions').select('*').order('sequence_number', { ascending: true });
+        const { data, error } = await supabase
+          .from('event_sessions')
+          .select('*')
+          .order('sequence_number', { ascending: true });
         if (!error && Array.isArray(data) && data.length > 0) {
           return {
             stages: data.map((s) => ({
@@ -548,12 +639,32 @@ export const api = {
       } catch {}
     }
 
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/eventflow`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.stages) && data.stages.length > 0) return data;
+      }
+    } catch {}
+
     return { stages: [] };
   },
 
   async addEventStage(payload) {
+    if (isSupabaseDirectReady && supabase) {
+      const { data, error } = await supabase.from('event_sessions').insert({
+        title: payload.title,
+        start_time: payload.startTime || '10:00 AM',
+        end_time: payload.endTime || '10:30 AM',
+        description: payload.description || '',
+        key_activities: Array.isArray(payload.activities) ? payload.activities : []
+      }).select().single();
+      if (error) throw error;
+      if (data) return { stage: data };
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/eventflow`, {
+      const res = await fetchWithTimeout(`${API_BASE}/eventflow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -561,29 +672,10 @@ export const api = {
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      const { data } = await supabase.from('event_sessions').insert({
-        title: payload.title,
-        start_time: payload.startTime || '10:00 AM',
-        end_time: payload.endTime || '10:30 AM',
-        description: payload.description || '',
-        key_activities: Array.isArray(payload.activities) ? payload.activities : []
-      }).select().single();
-      if (data) return { stage: data };
-    }
     return { success: true };
   },
 
   async updateEventStage(stage, payload) {
-    try {
-      const res = await fetch(`${API_BASE}/eventflow/${stage}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) return await res.json();
-    } catch {}
-
     if (isSupabaseDirectReady && supabase) {
       const updateData = {};
       if (payload.title) updateData.title = payload.title;
@@ -591,20 +683,35 @@ export const api = {
       if (payload.endTime) updateData.end_time = payload.endTime;
       if (payload.description !== undefined) updateData.description = payload.description;
       if (payload.activities) updateData.key_activities = payload.activities;
-      await supabase.from('event_sessions').update(updateData).eq('sequence_number', stage);
+      const { error } = await supabase.from('event_sessions').update(updateData).eq('sequence_number', stage);
+      if (error) throw error;
+      return { success: true };
     }
+
+    try {
+      const res = await fetchWithTimeout(`${API_BASE}/eventflow/${stage}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+
     return { success: true };
   },
 
   async deleteEventStage(stage) {
+    if (isSupabaseDirectReady && supabase) {
+      const { error } = await supabase.from('event_sessions').delete().eq('sequence_number', stage);
+      if (error) throw error;
+      return { success: true };
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/eventflow/${stage}`, { method: 'DELETE' });
+      const res = await fetchWithTimeout(`${API_BASE}/eventflow/${stage}`, { method: 'DELETE' });
       if (res.ok) return await res.json();
     } catch {}
 
-    if (isSupabaseDirectReady && supabase) {
-      await supabase.from('event_sessions').delete().eq('sequence_number', stage);
-    }
     return { success: true };
   }
 };
