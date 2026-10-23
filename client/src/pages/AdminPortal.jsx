@@ -1057,16 +1057,6 @@ export const AdminPortal = ({ onGoToLanding }) => {
           </div>
 
           <div className="topbar-meta">
-            <button
-              type="button"
-              className="topbar-landing-btn"
-              onClick={onGoToLanding || (() => window.open('/landing', '_blank'))}
-              title="View Public Event Landing Page"
-            >
-              <Globe size={13} />
-              <span>Landing Page</span>
-            </button>
-
             <div className="meta-box">
               <Calendar size={14} className="meta-ico" />
               <div>

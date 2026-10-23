@@ -560,6 +560,17 @@ export const api = {
       });
       if (res.ok) return await res.json();
     } catch {}
+
+    if (isSupabaseDirectReady && supabase) {
+      const { data } = await supabase.from('event_sessions').insert({
+        title: payload.title,
+        start_time: payload.startTime || '10:00 AM',
+        end_time: payload.endTime || '10:30 AM',
+        description: payload.description || '',
+        key_activities: Array.isArray(payload.activities) ? payload.activities : []
+      }).select().single();
+      if (data) return { stage: data };
+    }
     return { success: true };
   },
 
@@ -572,6 +583,16 @@ export const api = {
       });
       if (res.ok) return await res.json();
     } catch {}
+
+    if (isSupabaseDirectReady && supabase) {
+      const updateData = {};
+      if (payload.title) updateData.title = payload.title;
+      if (payload.startTime) updateData.start_time = payload.startTime;
+      if (payload.endTime) updateData.end_time = payload.endTime;
+      if (payload.description !== undefined) updateData.description = payload.description;
+      if (payload.activities) updateData.key_activities = payload.activities;
+      await supabase.from('event_sessions').update(updateData).eq('sequence_number', stage);
+    }
     return { success: true };
   },
 
@@ -580,6 +601,10 @@ export const api = {
       const res = await fetch(`${API_BASE}/eventflow/${stage}`, { method: 'DELETE' });
       if (res.ok) return await res.json();
     } catch {}
+
+    if (isSupabaseDirectReady && supabase) {
+      await supabase.from('event_sessions').delete().eq('sequence_number', stage);
+    }
     return { success: true };
   }
 };

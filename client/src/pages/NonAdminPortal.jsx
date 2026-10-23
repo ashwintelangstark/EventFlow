@@ -408,16 +408,6 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
         {/* TOPBAR */}
         <header className="nonadmin-topbar">
           <div className="topbar-left-meta">
-            <button
-              type="button"
-              className="topbar-landing-btn"
-              onClick={onGoToLanding || (() => window.open('/landing', '_blank'))}
-              title="View Public Event Landing Page"
-            >
-              <Globe size={13} />
-              <span>Landing Page</span>
-            </button>
-
             <div className="topbar-meta-item">
               <Calendar size={14} className="meta-icon" />
               <span>Sat, 24 Oct 2026 · 10:00 AM – 1:00 PM</span>
