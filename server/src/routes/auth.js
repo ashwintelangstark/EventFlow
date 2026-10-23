@@ -169,41 +169,6 @@ router.post('/signup', async (req, res) => {
           designation: cleanDesig,
           phone: cleanPhone || null
         });
-
-        // Register participant so their details immediately appear in Admin Portal
-        if (systemRole !== 'admin') {
-          const { data: existingReg } = await supabaseAdmin
-            .from('registrations')
-            .select('id')
-            .eq('email', cleanEmail)
-            .limit(1);
-
-          if (existingReg && existingReg.length > 0) {
-            await supabaseAdmin.from('registrations').update({
-              user_id: userObj.id,
-              full_name: displayName,
-              phone: cleanPhone,
-              category: cleanCat,
-              organization: cleanOrg,
-              designation: cleanDesig
-            }).eq('id', existingReg[0].id);
-          } else {
-            const { error: insErr } = await supabaseAdmin.from('registrations').insert({
-              user_id: userObj.id,
-              full_name: displayName,
-              email: cleanEmail,
-              phone: cleanPhone,
-              category: cleanCat,
-              organization: cleanOrg,
-              designation: cleanDesig,
-              status: 'Registered',
-              created_at: new Date().toISOString()
-            });
-            if (insErr) {
-              console.error('Error auto-registering user in registrations table:', insErr);
-            }
-          }
-        }
       }
 
       const user = formatUser(userObj, {

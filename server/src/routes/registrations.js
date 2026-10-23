@@ -118,10 +118,11 @@ router.get('/', async (req, res) => {
   res.status(503).json({ error: 'Database service unavailable' });
 });
 
-// POST /api/registrations - Add single participant
+// POST /api/registrations - Add or update single participant registration
 router.post('/', async (req, res) => {
   const {
     name,
+    fullName,
     email,
     phone,
     category,
@@ -129,43 +130,52 @@ router.post('/', async (req, res) => {
     designation,
     department,
     dietaryPreference,
+    diet,
     areasOfInterest,
-    notes
+    interests,
+    notes,
+    extra,
+    status
   } = req.body;
 
-  if (!name || !email) {
+  const resolvedName = (name || fullName || '').trim();
+  const resolvedEmail = (email || '').trim().toLowerCase();
+
+  if (!resolvedName || !resolvedEmail) {
     return res.status(400).json({ error: 'Name and email are required' });
   }
 
   if (isSupabaseConfigured && supabaseAdmin) {
     try {
-      const payload = {
-        full_name: name.trim(),
-        email: email.trim().toLowerCase(),
-        phone: (phone && phone.trim()) ? phone.trim() : '',
-        category: category || 'Student',
-        organization: (organization && organization.trim()) ? organization.trim() : 'Alliance University',
-        designation: (designation && designation.trim()) ? designation.trim() : 'Participant',
-        department: department || null,
-        dietary_preference: dietaryPreference || null,
-        areas_of_interest: Array.isArray(areasOfInterest) ? areasOfInterest : null,
-        additional_info: notes || null,
-        status: 'Registered'
-      };
-
       // Check if attendee with same email already exists
       const { data: existing } = await supabaseAdmin
         .from('registrations')
         .select('*')
-        .eq('email', payload.email)
+        .eq('email', resolvedEmail)
         .limit(1);
 
+      const existingRecord = existing && existing.length > 0 ? existing[0] : null;
+
+      const payload = {
+        full_name: resolvedName,
+        email: resolvedEmail,
+        phone: (phone && phone.trim()) ? phone.trim() : (existingRecord?.phone || ''),
+        category: category || existingRecord?.category || 'Student',
+        organization: (organization && organization.trim()) ? organization.trim() : (existingRecord?.organization || 'Alliance University'),
+        designation: (designation && designation.trim()) ? designation.trim() : (existingRecord?.designation || 'Participant'),
+        department: (department && department.trim()) ? department.trim() : (existingRecord?.department || null),
+        dietary_preference: dietaryPreference || diet || existingRecord?.dietary_preference || null,
+        areas_of_interest: Array.isArray(areasOfInterest) ? areasOfInterest : (Array.isArray(interests) ? interests : (existingRecord?.areas_of_interest || null)),
+        additional_info: notes || extra || existingRecord?.additional_info || null,
+        status: existingRecord?.status === 'Checked In' ? 'Checked In' : (status || 'Registered')
+      };
+
       let data, error;
-      if (existing && existing.length > 0) {
+      if (existingRecord) {
         const updateRes = await supabaseAdmin
           .from('registrations')
           .update(payload)
-          .eq('id', existing[0].id)
+          .eq('id', existingRecord.id)
           .select()
           .single();
         data = updateRes.data;
@@ -173,7 +183,10 @@ router.post('/', async (req, res) => {
       } else {
         const insertRes = await supabaseAdmin
           .from('registrations')
-          .insert(payload)
+          .insert({
+            ...payload,
+            created_at: new Date().toISOString()
+          })
           .select()
           .single();
         data = insertRes.data;

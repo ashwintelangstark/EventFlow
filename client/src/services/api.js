@@ -163,37 +163,6 @@ export const api = {
             organization: cleanOrg,
             designation: cleanDesig
           });
-
-          if (systemRole !== 'admin') {
-            const { data: existingReg } = await supabase
-              .from('registrations')
-              .select('id')
-              .eq('email', cleanEmail)
-              .limit(1);
-
-            if (existingReg && existingReg.length > 0) {
-              await supabase.from('registrations').update({
-                user_id: data.user.id,
-                full_name: displayName,
-                phone: cleanPhone,
-                category: cleanCat,
-                organization: cleanOrg,
-                designation: cleanDesig
-              }).eq('id', existingReg[0].id);
-            } else {
-              await supabase.from('registrations').insert({
-                user_id: data.user.id,
-                full_name: displayName,
-                email: cleanEmail,
-                phone: cleanPhone,
-                category: cleanCat,
-                organization: cleanOrg,
-                designation: cleanDesig,
-                status: 'Registered',
-                created_at: new Date().toISOString()
-              });
-            }
-          }
         } catch (dbErr) {
           console.warn('Direct profile sync note:', dbErr);
         }
@@ -323,7 +292,7 @@ export const api = {
         designation: (payload.designation || '').trim() || 'Participant',
         department: (payload.department || '').trim() || null,
         dietary_preference: payload.diet || payload.dietaryPreference || null,
-        areas_of_interest: Array.isArray(payload.interests) ? payload.interests : null,
+        areas_of_interest: Array.isArray(payload.interests) ? payload.interests : (Array.isArray(payload.areasOfInterest) ? payload.areasOfInterest : null),
         additional_info: payload.extra || payload.notes || null,
         status: payload.status || 'Registered',
         created_at: new Date().toISOString()
@@ -332,11 +301,14 @@ export const api = {
       try {
         const { data: existing } = await supabase
           .from('registrations')
-          .select('id')
+          .select('id, status')
           .eq('email', cleanEmail)
           .limit(1);
 
         if (existing && existing.length > 0) {
+          if (existing[0].status === 'Checked In') {
+            row.status = 'Checked In';
+          }
           const { data, error } = await supabase
             .from('registrations')
             .update(row)

@@ -472,7 +472,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
             imported.push({
               name: cols[0],
               email: cols[1],
-              phone: cols[2] || '+91 90000 00000',
+              phone: cols[2] || '',
               category: cols[3] || 'Other',
               organization: cols[4] || 'Independent',
               status: cols[5] || 'Registered'

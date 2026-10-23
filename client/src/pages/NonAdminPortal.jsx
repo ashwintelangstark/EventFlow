@@ -216,7 +216,11 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
               department: found.department || prev.department,
               category: found.category || prev.category
             }));
+          } else {
+            setMyPass(null);
           }
+        } else {
+          setMyPass(null);
         }
       }
 
@@ -288,21 +292,29 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
       organization: selfForm.organization.trim() || 'Alliance University',
       designation: selfForm.designation.trim() || 'Participant',
       department: selfForm.department.trim() || '',
+      dietaryPreference: selfForm.diet || 'No preference',
+      areasOfInterest: selfForm.interests || [],
+      notes: selfForm.extra || '',
       ticketType: selfForm.category === 'Founder / Startup' ? 'VIP Pass' : 'Standard Pass',
-      status: 'Confirmed',
+      status: 'Registered',
       checkedIn: false
     };
 
     try {
       const res = await api.addRegistration(regPayload);
       const saved = res?.attendee || res || regPayload;
-      setMyPass(saved);
-      showToast(`Registration confirmed! Welcome, ${selfForm.fullName}.`);
+      const passData = {
+        ...regPayload,
+        ...saved,
+        status: saved.status === 'Checked In' ? 'Checked In' : 'Registered'
+      };
+      setMyPass(passData);
+      showToast(`Registration saved! You are now officially registered, ${selfForm.fullName}.`);
       await refreshData();
     } catch (err) {
       console.error('Registration submission error:', err);
-      setMyPass(regPayload);
-      showToast(`Registration recorded! Welcome, ${selfForm.fullName}.`);
+      setMyPass({ ...regPayload, status: 'Registered' });
+      showToast(`Registration recorded! You are now registered, ${selfForm.fullName}.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -449,35 +461,57 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                   <span className="pill pill-cyan">Live Sync</span>
                 </div>
 
-                {myPass && (
+                {myPass ? (
                   <div style={{
-                    background: 'linear-gradient(135deg, rgba(28, 127, 255, 0.12), rgba(150, 70, 255, 0.12))',
-                    border: '1px solid rgba(28, 127, 255, 0.3)',
+                    background: 'linear-gradient(135deg, rgba(16, 212, 163, 0.12), rgba(28, 127, 255, 0.12))',
+                    border: '1px solid rgba(16, 212, 163, 0.35)',
                     borderRadius: '10px',
                     padding: '16px',
                     marginBottom: '18px'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent-cyan)' }}>
-                          ✓ Confirmed Event Pass
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent-green)', fontWeight: 600 }}>
+                          ✓ Registered Event Pass
                         </div>
                         <h4 style={{ margin: '4px 0', fontSize: '16px', color: 'var(--text-primary)' }}>
                           {myPass.name}
                         </h4>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                           {myPass.organization} · <span className="pill pill-purple">{myPass.category}</span>
+                          {myPass.phone && ` · 📞 ${myPass.phone}`}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <span className={`pill ${myPass.checkedIn ? 'pill-green' : 'pill-cyan'}`}>
-                          {myPass.checkedIn ? 'Checked In' : 'Confirmed'}
+                        <span className={`pill ${myPass.checkedIn || myPass.status === 'Checked In' ? 'pill-green' : 'pill-cyan'}`} style={{ fontWeight: 600 }}>
+                          {myPass.checkedIn || myPass.status === 'Checked In' ? 'Checked In' : 'Registered'}
                         </span>
                         <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '4px' }}>
                           ID: #{myPass.id || 'SYNCED'}
                         </div>
                       </div>
                     </div>
+                  </div>
+                ) : (
+                  <div style={{
+                    background: 'rgba(255, 170, 0, 0.08)',
+                    border: '1px solid rgba(255, 170, 0, 0.25)',
+                    borderRadius: '10px',
+                    padding: '14px 16px',
+                    marginBottom: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-amber)' }}>
+                        ⚠️ Event Pass Status: Not Registered Yet
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        You are signed in, but have not registered for this event yet. Enter or verify your details below and click <strong>Register for Event Pass</strong>.
+                      </div>
+                    </div>
+                    <span className="pill pill-amber" style={{ fontWeight: 600 }}>Not Registered</span>
                   </div>
                 )}
 
@@ -619,7 +653,11 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                     style={{ padding: '12px', marginTop: '10px' }}
                   >
                     <Check size={16} />
-                    <span>{isSubmitting ? 'Registering...' : (myPass ? 'Update My Registration' : 'Register Myself')}</span>
+                    <span>
+                      {isSubmitting
+                        ? 'Saving Details...'
+                        : (myPass ? '✓ Registered — Update Details' : 'Register for Event Pass')}
+                    </span>
                   </button>
 
                   <p className="text-dim" style={{ fontSize: '11px', textAlign: 'center', marginTop: '4px' }}>
