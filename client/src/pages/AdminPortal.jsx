@@ -434,18 +434,19 @@ export const AdminPortal = ({ onGoToLanding }) => {
 
     try {
       const res = await api.addRegistration({
-        name: newReg.name,
-        email: newReg.email,
-        phone: newReg.phone || '+91 98000 00000',
+        name: newReg.name.trim(),
+        email: newReg.email.trim().toLowerCase(),
+        phone: (newReg.phone || '').trim(),
         category: newReg.category || 'Student',
-        organization: newReg.organization || 'Alliance University'
+        organization: (newReg.organization || '').trim() || 'Alliance University',
+        designation: (newReg.designation || '').trim() || 'Participant'
       });
       if (res?.attendee) {
         setAttendees((prev) => [res.attendee, ...prev]);
       } else {
         refreshData();
       }
-      setNewReg({ name: '', email: '', phone: '', category: '', organization: '' });
+      setNewReg({ name: '', email: '', phone: '', category: '', organization: '', designation: '' });
       showToast(`Added registration for ${newReg.name}`);
     } catch (err) {
       showToast(`Error adding registration: ${err.message}`);
@@ -1338,7 +1339,7 @@ export const AdminPortal = ({ onGoToLanding }) => {
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Category</th>
-                        <th>Organization</th>
+                        <th>Organization & Role</th>
                         <th>Status</th>
                         <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
@@ -1363,9 +1364,16 @@ export const AdminPortal = ({ onGoToLanding }) => {
                               </div>
                             </td>
                             <td>{a.email}</td>
-                            <td>{a.phone}</td>
+                            <td>{a.phone || '—'}</td>
                             <td><span className={`pill ${getCategoryClass(a.category)}`}>{a.category}</span></td>
-                            <td>{a.organization}</td>
+                            <td>
+                              <div style={{ fontWeight: '500' }}>{a.organization || 'Alliance University'}</div>
+                              {a.designation && (
+                                <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                                  💼 {a.designation}
+                                </div>
+                              )}
+                            </td>
                             <td>
                               <span className={`pill ${a.status === 'Checked In' ? 'pill-green' : 'pill-amber'}`}>
                                 {a.status}
@@ -1479,6 +1487,15 @@ export const AdminPortal = ({ onGoToLanding }) => {
                         placeholder="University or company"
                         value={newReg.organization}
                         onChange={(e) => setNewReg({ ...newReg, organization: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="input-group">
+                      <label>Designation / Role</label>
+                      <input
+                        placeholder="e.g. Student, Software Engineer"
+                        value={newReg.designation || ''}
+                        onChange={(e) => setNewReg({ ...newReg, designation: e.target.value })}
                       />
                     </div>
 
@@ -2473,27 +2490,6 @@ export const AdminPortal = ({ onGoToLanding }) => {
                     <li>Laptops and prototyping tools recommended.</li>
                     <li>Complimentary lunch provided.</li>
                   </ul>
-                </div>
-
-                <div className="card" style={{ marginTop: '10px' }}>
-                  <h3>Event Resources</h3>
-                  <div className="resource-list">
-                    <a href="#pdf" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Downloading Schedule PDF...'); }}>
-                      <FileText size={14} />
-                      <span>Event Schedule (PDF)</span>
-                      <Download size={12} className="download-ico" />
-                    </a>
-                    <a href="#map" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Opening Campus Map...'); }}>
-                      <MapPin size={14} />
-                      <span>Campus & Venue Map</span>
-                      <Download size={12} className="download-ico" />
-                    </a>
-                    <a href="#rules" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Opening Code of Conduct...'); }}>
-                      <FileText size={14} />
-                      <span>Code of Conduct</span>
-                      <Download size={12} className="download-ico" />
-                    </a>
-                  </div>
                 </div>
               </div>
             </div>

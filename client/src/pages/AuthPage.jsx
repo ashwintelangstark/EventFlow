@@ -17,7 +17,11 @@ import {
   ArrowLeft,
   Globe,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  User,
+  Phone,
+  Building,
+  Briefcase
 } from 'lucide-react';
 import './AuthPage.css';
 
@@ -95,7 +99,11 @@ export const AuthPage = ({ onBackToLanding }) => {
   };
 
   // Form states
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [designation, setDesignation] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [roleCategory, setRoleCategory] = useState('Student');
@@ -131,11 +139,14 @@ export const AuthPage = ({ onBackToLanding }) => {
 
     try {
       await signup({
-        email,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        organization: organization.trim() || 'Alliance University',
+        designation: designation.trim() || 'Participant',
         password,
         category: roleCategory,
-        role: roleCategory === 'Admin' ? 'admin' : (email.includes('admin') ? 'admin' : 'attendee'),
-        organization: 'Alliance University'
+        role: roleCategory === 'Admin' ? 'admin' : (email.includes('admin') ? 'admin' : 'staff')
       });
       setSuccessMsg('Account created successfully! Redirecting...');
     } catch (err) {
@@ -154,7 +165,7 @@ export const AuthPage = ({ onBackToLanding }) => {
         loop
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
       >
         <source src={bgVideo} type="video/mp4" />
         <source src="/landing_pg.mp4" type="video/mp4" />
@@ -398,63 +409,81 @@ export const AuthPage = ({ onBackToLanding }) => {
                 </div>
 
                 <div className="input-group">
-                  <label>Email Address <span className="req">*</span></label>
+                  <label>Full Name <span className="req">*</span></label>
                   <div className="input-field">
-                    <Mail size={17} className="field-icon" />
+                    <User size={17} className="field-icon" />
                     <input
-                      type="email"
+                      type="text"
                       required
-                      placeholder="Enter your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                     />
                   </div>
                 </div>
 
-                <div className="input-group">
-                  <label>Password <span className="req">*</span></label>
-                  <div className="input-field">
-                    <Lock size={17} className="field-icon" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      placeholder="Create a strong password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="eye-btn"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                <div className="form-two-col">
+                  <div className="input-group">
+                    <label>Email Address <span className="req">*</span></label>
+                    <div className="input-field">
+                      <Mail size={17} className="field-icon" />
+                      <input
+                        type="email"
+                        required
+                        placeholder="Enter your email address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Phone Number <span className="req">*</span></label>
+                    <div className="input-field">
+                      <Phone size={17} className="field-icon" />
+                      <input
+                        type="tel"
+                        required
+                        placeholder="+91 98765 43210"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-two-col">
+                  <div className="input-group">
+                    <label>Organization / University <span className="req">*</span></label>
+                    <div className="input-field">
+                      <Building size={17} className="field-icon" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Alliance University, Infosys"
+                        value={organization}
+                        onChange={(e) => setOrganization(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Designation / Role <span className="req">*</span></label>
+                    <div className="input-field">
+                      <Briefcase size={17} className="field-icon" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Student, Software Engineer"
+                        value={designation}
+                        onChange={(e) => setDesignation(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div className="input-group">
-                  <label>Confirm Password <span className="req">*</span></label>
-                  <div className="input-field">
-                    <Lock size={17} className="field-icon" />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      required
-                      placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="eye-btn"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="input-group">
-                  <label>Role / Designation <span className="req">*</span></label>
+                  <label>Category <span className="req">*</span></label>
                   <select
                     value={roleCategory}
                     onChange={(e) => setRoleCategory(e.target.value)}
@@ -467,6 +496,50 @@ export const AuthPage = ({ onBackToLanding }) => {
                     <option value="Developer">Developer</option>
                     <option value="Other">Other</option>
                   </select>
+                </div>
+
+                <div className="form-two-col">
+                  <div className="input-group">
+                    <label>Password <span className="req">*</span></label>
+                    <div className="input-field">
+                      <Lock size={17} className="field-icon" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        placeholder="Create a password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="eye-btn"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Confirm Password <span className="req">*</span></label>
+                    <div className="input-field">
+                      <Lock size={17} className="field-icon" />
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        placeholder="Confirm password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="eye-btn"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="terms-check">

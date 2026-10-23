@@ -20,6 +20,7 @@ const formatUser = (authUser, profile = {}) => {
     role,
     category: isAdmin ? 'Admin' : (profile?.category || authUser?.user_metadata?.category || 'Student'),
     organization: isAdmin ? 'AU-QUASAR Operations' : (profile?.organization || authUser?.user_metadata?.organization || 'Alliance University'),
+    designation: profile?.designation || authUser?.user_metadata?.designation || 'Participant',
     phone: profile?.phone || authUser?.user_metadata?.phone || '',
     avatar: displayName.charAt(0).toUpperCase()
   };
@@ -73,7 +74,7 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
-  const { email, password, category, name, organization, phone } = req.body;
+  const { email, password, category, name, organization, phone, designation } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -82,7 +83,11 @@ router.post('/signup', async (req, res) => {
   if (isSupabaseConfigured && supabase) {
     try {
       const cleanEmail = email.trim().toLowerCase();
-      const displayName = name || cleanEmail.split('@')[0].replace('.', ' ');
+      const displayName = (name && name.trim()) ? name.trim() : cleanEmail.split('@')[0].replace('.', ' ');
+      const cleanPhone = (phone && phone.trim()) ? phone.trim() : '';
+      const cleanOrg = (organization && organization.trim()) ? organization.trim() : 'Alliance University';
+      const cleanDesig = (designation && designation.trim()) ? designation.trim() : 'Participant';
+      const cleanCat = category || 'Student';
 
       // All new signups are strictly non-admin ('staff' / attendee).
       // Only the pre-registered admin@gmail.com can be admin.
@@ -99,9 +104,10 @@ router.post('/signup', async (req, res) => {
           user_metadata: {
             name: displayName,
             role: systemRole,
-            category: category || 'Student',
-            organization: organization || 'Alliance University',
-            phone: phone || ''
+            category: cleanCat,
+            organization: cleanOrg,
+            designation: cleanDesig,
+            phone: cleanPhone
           }
         });
 
@@ -116,9 +122,10 @@ router.post('/signup', async (req, res) => {
               data: {
                 name: displayName,
                 role: systemRole,
-                category: category || 'Student',
-                organization: organization || 'Alliance University',
-                phone: phone || ''
+                category: cleanCat,
+                organization: cleanOrg,
+                designation: cleanDesig,
+                phone: cleanPhone
               }
             }
           });
@@ -136,9 +143,10 @@ router.post('/signup', async (req, res) => {
             data: {
               name: displayName,
               role: systemRole,
-              category: category || 'Student',
-              organization: organization || 'Alliance University',
-              phone: phone || ''
+              category: cleanCat,
+              organization: cleanOrg,
+              designation: cleanDesig,
+              phone: cleanPhone
             }
           }
         });
@@ -156,9 +164,10 @@ router.post('/signup', async (req, res) => {
           id: userObj.id,
           full_name: displayName,
           role: systemRole,
-          category: category || 'Student',
-          organization: organization || 'Alliance University',
-          phone: phone || null
+          category: cleanCat,
+          organization: cleanOrg,
+          designation: cleanDesig,
+          phone: cleanPhone || null
         });
 
         // Register participant so their details immediately appear in Admin Portal
@@ -169,15 +178,24 @@ router.post('/signup', async (req, res) => {
             .eq('email', cleanEmail)
             .limit(1);
 
-          if (!existingReg || existingReg.length === 0) {
+          if (existingReg && existingReg.length > 0) {
+            await supabaseAdmin.from('registrations').update({
+              user_id: userObj.id,
+              full_name: displayName,
+              phone: cleanPhone,
+              category: cleanCat,
+              organization: cleanOrg,
+              designation: cleanDesig
+            }).eq('id', existingReg[0].id);
+          } else {
             const { error: insErr } = await supabaseAdmin.from('registrations').insert({
               user_id: userObj.id,
               full_name: displayName,
               email: cleanEmail,
-              phone: (phone && phone.trim()) ? phone.trim() : '+91 90000 00000',
-              category: category || 'Student',
-              organization: organization || 'Alliance University',
-              designation: 'Participant',
+              phone: cleanPhone,
+              category: cleanCat,
+              organization: cleanOrg,
+              designation: cleanDesig,
               status: 'Registered',
               created_at: new Date().toISOString()
             });
@@ -191,9 +209,10 @@ router.post('/signup', async (req, res) => {
       const user = formatUser(userObj, {
         full_name: displayName,
         role: systemRole,
-        category: category || 'Student',
-        organization: organization || 'Alliance University',
-        phone
+        category: cleanCat,
+        organization: cleanOrg,
+        designation: cleanDesig,
+        phone: cleanPhone
       });
 
       return res.status(201).json({

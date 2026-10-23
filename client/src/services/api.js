@@ -19,6 +19,7 @@ const formatUser = (authUser, profile = {}) => {
     role,
     category: isAdmin ? 'Admin' : (profile?.category || authUser?.user_metadata?.category || 'Student'),
     organization: isAdmin ? 'AU-QUASAR Operations' : (profile?.organization || authUser?.user_metadata?.organization || 'Alliance University'),
+    designation: profile?.designation || authUser?.user_metadata?.designation || 'Participant',
     phone: profile?.phone || authUser?.user_metadata?.phone || '',
     avatar: displayName.charAt(0).toUpperCase()
   };
@@ -130,6 +131,11 @@ export const api = {
 
     // Direct Supabase Fallback
     if (isSupabaseDirectReady && supabase) {
+      const cleanPhone = (payload.phone || '').trim();
+      const cleanOrg = (payload.organization || '').trim() || 'Alliance University';
+      const cleanDesig = (payload.designation || '').trim() || 'Participant';
+      const cleanCat = payload.category || 'Student';
+
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password: payload.password,
@@ -137,8 +143,10 @@ export const api = {
           data: {
             name: displayName,
             role: systemRole,
-            category: payload.category || 'Student',
-            organization: payload.organization || 'Alliance University'
+            phone: cleanPhone,
+            category: cleanCat,
+            organization: cleanOrg,
+            designation: cleanDesig
           }
         }
       });
@@ -150,22 +158,41 @@ export const api = {
             id: data.user.id,
             full_name: displayName,
             role: systemRole,
-            category: payload.category || 'Student',
-            organization: payload.organization || 'Alliance University'
+            phone: cleanPhone,
+            category: cleanCat,
+            organization: cleanOrg,
+            designation: cleanDesig
           });
 
           if (systemRole !== 'admin') {
-            await supabase.from('registrations').insert({
-              user_id: data.user.id,
-              full_name: displayName,
-              email: cleanEmail,
-              phone: payload.phone || '+91 90000 00000',
-              category: payload.category || 'Student',
-              organization: payload.organization || 'Alliance University',
-              designation: 'Participant',
-              status: 'Registered',
-              created_at: new Date().toISOString()
-            });
+            const { data: existingReg } = await supabase
+              .from('registrations')
+              .select('id')
+              .eq('email', cleanEmail)
+              .limit(1);
+
+            if (existingReg && existingReg.length > 0) {
+              await supabase.from('registrations').update({
+                user_id: data.user.id,
+                full_name: displayName,
+                phone: cleanPhone,
+                category: cleanCat,
+                organization: cleanOrg,
+                designation: cleanDesig
+              }).eq('id', existingReg[0].id);
+            } else {
+              await supabase.from('registrations').insert({
+                user_id: data.user.id,
+                full_name: displayName,
+                email: cleanEmail,
+                phone: cleanPhone,
+                category: cleanCat,
+                organization: cleanOrg,
+                designation: cleanDesig,
+                status: 'Registered',
+                created_at: new Date().toISOString()
+              });
+            }
           }
         } catch (dbErr) {
           console.warn('Direct profile sync note:', dbErr);
@@ -173,7 +200,14 @@ export const api = {
       }
 
       return {
-        user: formatUser(data.user, { full_name: displayName, role: systemRole }),
+        user: formatUser(data.user, {
+          full_name: displayName,
+          role: systemRole,
+          phone: cleanPhone,
+          category: cleanCat,
+          organization: cleanOrg,
+          designation: cleanDesig
+        }),
         token: data.session?.access_token || 'confirmed'
       };
     }
@@ -279,19 +313,44 @@ export const api = {
     } catch {}
 
     if (isSupabaseDirectReady && supabase) {
+      const cleanEmail = (payload.email || '').toLowerCase().trim();
       const row = {
-        full_name: payload.name || payload.fullName,
-        email: payload.email,
-        phone: payload.phone || '+91 90000 00000',
+        full_name: (payload.name || payload.fullName || '').trim(),
+        email: cleanEmail,
+        phone: (payload.phone || '').trim(),
         category: payload.category || 'Student',
-        organization: payload.organization || 'Alliance University',
-        designation: payload.designation || 'Participant',
-        department: payload.department || '',
+        organization: (payload.organization || '').trim() || 'Alliance University',
+        designation: (payload.designation || '').trim() || 'Participant',
+        department: (payload.department || '').trim() || null,
+        dietary_preference: payload.diet || payload.dietaryPreference || null,
+        areas_of_interest: Array.isArray(payload.interests) ? payload.interests : null,
+        additional_info: payload.extra || payload.notes || null,
         status: payload.status || 'Registered',
         created_at: new Date().toISOString()
       };
-      const { data, error } = await supabase.from('registrations').insert(row).select().single();
-      if (!error && data) return { attendee: formatAttendee(data) };
+
+      try {
+        const { data: existing } = await supabase
+          .from('registrations')
+          .select('id')
+          .eq('email', cleanEmail)
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          const { data, error } = await supabase
+            .from('registrations')
+            .update(row)
+            .eq('id', existing[0].id)
+            .select()
+            .single();
+          if (!error && data) return { attendee: formatAttendee(data) };
+        } else {
+          const { data, error } = await supabase.from('registrations').insert(row).select().single();
+          if (!error && data) return { attendee: formatAttendee(data) };
+        }
+      } catch (sbErr) {
+        console.warn('Direct supabase registration error:', sbErr);
+      }
     }
 
     return { success: true };

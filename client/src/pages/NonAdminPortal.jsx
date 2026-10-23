@@ -163,10 +163,10 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
   const [selfForm, setSelfForm] = useState({
     fullName: user?.name || '',
     email: user?.email || '',
-    phone: '',
+    phone: user?.phone || '',
     category: user?.category || 'Student',
     organization: user?.organization || 'Alliance University',
-    designation: '',
+    designation: user?.designation || '',
     department: '',
     diet: 'No preference',
     interests: [],
@@ -192,24 +192,50 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
         api.getEventFlow()
       ]);
 
-      if (regsData.status === 'fulfilled' && Array.isArray(regsData.value)) {
-        setRegistrations(regsData.value);
-        if (user?.email) {
-          const found = regsData.value.find(
+      if (regsData.status === 'fulfilled') {
+        const raw = regsData.value;
+        const attendeesList = Array.isArray(raw)
+          ? raw
+          : (Array.isArray(raw?.attendees) ? raw.attendees : []);
+
+        setRegistrations(attendeesList);
+        if (user?.email && attendeesList.length > 0) {
+          const found = attendeesList.find(
             (r) => (r.email || '').toLowerCase() === user.email.toLowerCase()
           );
           if (found) {
             setMyPass(found);
+            // Prepopulate selfForm with their actual registered details from database!
+            setSelfForm((prev) => ({
+              ...prev,
+              fullName: found.name || prev.fullName,
+              email: found.email || prev.email,
+              phone: found.phone || prev.phone,
+              organization: found.organization || prev.organization,
+              designation: found.designation || prev.designation,
+              department: found.department || prev.department,
+              category: found.category || prev.category
+            }));
           }
         }
       }
 
-      if (annsData.status === 'fulfilled' && Array.isArray(annsData.value)) {
-        setAnnouncements(annsData.value);
+      if (annsData.status === 'fulfilled') {
+        const rawAnn = annsData.value;
+        const list = Array.isArray(rawAnn)
+          ? rawAnn
+          : (Array.isArray(rawAnn?.announcements) ? rawAnn.announcements : []);
+        setAnnouncements(list);
       }
 
-      if (flowData.status === 'fulfilled' && Array.isArray(flowData.value) && flowData.value.length > 0) {
-        setEventStages(flowData.value);
+      if (flowData.status === 'fulfilled') {
+        const rawFlow = flowData.value;
+        const stagesList = Array.isArray(rawFlow)
+          ? rawFlow
+          : (Array.isArray(rawFlow?.stages) ? rawFlow.stages : []);
+        if (stagesList.length > 0) {
+          setEventStages(stagesList);
+        }
       }
     } catch (err) {
       console.warn('Sync refresh error in NonAdminPortal:', err);
@@ -229,7 +255,9 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
         ...prev,
         fullName: prev.fullName || user.name || '',
         email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || '',
         organization: prev.organization || user.organization || 'Alliance University',
+        designation: prev.designation || user.designation || '',
         category: prev.category || user.category || 'Student'
       }));
     }
@@ -253,21 +281,22 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
 
     setIsSubmitting(true);
     const regPayload = {
-      name: selfForm.fullName,
-      email: selfForm.email,
-      phone: selfForm.phone || '+91 90000 00000',
+      name: selfForm.fullName.trim(),
+      email: selfForm.email.trim().toLowerCase(),
+      phone: selfForm.phone.trim(),
       category: selfForm.category || 'Student',
-      organization: selfForm.organization || 'Alliance University',
-      designation: selfForm.designation || 'Participant',
-      department: selfForm.department || '',
+      organization: selfForm.organization.trim() || 'Alliance University',
+      designation: selfForm.designation.trim() || 'Participant',
+      department: selfForm.department.trim() || '',
       ticketType: selfForm.category === 'Founder / Startup' ? 'VIP Pass' : 'Standard Pass',
       status: 'Confirmed',
       checkedIn: false
     };
 
     try {
-      const saved = await api.addRegistration(regPayload);
-      setMyPass(saved || regPayload);
+      const res = await api.addRegistration(regPayload);
+      const saved = res?.attendee || res || regPayload;
+      setMyPass(saved);
       showToast(`Registration confirmed! Welcome, ${selfForm.fullName}.`);
       await refreshData();
     } catch (err) {
@@ -901,22 +930,6 @@ export const NonAdminPortal = ({ onGoToLanding }) => {
                       <span className="bullet pink">•</span>
                       <span>Final round presentations will be evaluated by jury.</span>
                     </div>
-                  </div>
-                </div>
-
-                <div className="card" style={{ marginTop: '16px' }}>
-                  <h3>Event Resources</h3>
-                  <div className="resource-list" style={{ marginTop: '14px' }}>
-                    <a href="#pdf" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Downloading Official Event Schedule PDF...'); }}>
-                      <FileText size={15} />
-                      <span>Event Schedule (PDF)</span>
-                      <Download size={13} className="download-ico" />
-                    </a>
-                    <a href="#map" className="resource-item" onClick={(e) => { e.preventDefault(); showToast('Opening Campus & Innovation Center Map...'); }}>
-                      <MapPin size={15} />
-                      <span>Campus & Venue Map</span>
-                      <Download size={13} className="download-ico" />
-                    </a>
                   </div>
                 </div>
               </div>

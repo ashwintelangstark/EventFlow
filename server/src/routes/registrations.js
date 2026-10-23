@@ -142,10 +142,10 @@ router.post('/', async (req, res) => {
       const payload = {
         full_name: name.trim(),
         email: email.trim().toLowerCase(),
-        phone: (phone && phone.trim()) ? phone.trim() : '+91 90000 00000',
+        phone: (phone && phone.trim()) ? phone.trim() : '',
         category: category || 'Student',
-        organization: organization || 'Alliance University',
-        designation: designation || 'Participant',
+        organization: (organization && organization.trim()) ? organization.trim() : 'Alliance University',
+        designation: (designation && designation.trim()) ? designation.trim() : 'Participant',
         department: department || null,
         dietary_preference: dietaryPreference || null,
         areas_of_interest: Array.isArray(areasOfInterest) ? areasOfInterest : null,
